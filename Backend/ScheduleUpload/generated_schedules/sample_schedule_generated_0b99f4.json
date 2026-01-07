@@ -1,0 +1,30 @@
+[
+    {
+        "subsystemName": "OBC",
+        "commandName": "OBC_581_TC_GET_CUR_TIME",
+        "LookUpTableID": "0",
+        "Timestamp": "1764165120",
+        "Delay": 0,
+        "SrcID": "FF",
+        "DestID": "81",
+        "TCID": "4502",
+        "RadioID": "04",
+        "Offset": "00000000",
+        "Length": "00000000",
+        "Payload": ""
+    },
+    {
+        "subsystemName": "OBC",
+        "commandName": "OBC_500_TC_GET_PROC_UTIL_INFO",
+        "LookUpTableID": "0",
+        "Timestamp": "1764165130",
+        "Delay": 10,
+        "SrcID": "FF",
+        "DestID": "81",
+        "TCID": "F401",
+        "RadioID": "04",
+        "Offset": "00000000",
+        "Length": "00000000",
+        "Payload": ""
+    }
+]

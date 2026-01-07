@@ -1,0 +1,138 @@
+#!/bin/bash
+
+set +e
+
+# Use docker, fallback to podman if docker not found
+if ! command -v docker &> /dev/null
+then
+  if command -v podman &> /dev/null
+  then
+    function docker() {
+      podman "$@"
+    }
+  else
+    echo "Neither docker nor podman found!!!"
+    exit 1
+  fi
+fi
+
+export DOCKER_COMPOSE_COMMAND="docker compose"
+${DOCKER_COMPOSE_COMMAND} version &> /dev/null
+if [ "$?" -ne 0 ]; then
+  export DOCKER_COMPOSE_COMMAND="docker-compose"
+fi
+
+# Detect rootless/rootful Docker
+docker info | grep -e "rootless$" -e "rootless: true"
+if [ "$?" -ne 0 ]; then
+  export OPENC3_ROOTFUL=1
+  export OPENC3_USER_ID=$(id -u)
+  export OPENC3_GROUP_ID=$(id -g)
+else
+  export OPENC3_ROOTLESS=1
+  export OPENC3_USER_ID=0
+  export OPENC3_GROUP_ID=0
+fi
+
+set -e
+
+usage() {
+  echo "Usage: $1 [cli, start, stop, cleanup, run, upgrade, util]" >&2
+  echo "*  cli: run a cli command as the default user ('cli help' for more info)" >&2
+  echo "*  start: alias for run" >&2
+  echo "*  stop: stop the containers (compose stop)" >&2
+  echo "*  cleanup [local] [force]: REMOVE volumes / data (compose down -v)" >&2
+  echo "*  run: run the containers (compose up)" >&2
+  echo "*  upgrade: upgrade the COSMOS project" >&2
+  echo "*  util: various helper commands" >&2
+  exit 1
+}
+
+if [ "$#" -eq 0 ]; then
+  usage "$0"
+fi
+
+check_root() {
+  if [ "$(id -u)" -eq 0 ]; then
+    echo "WARNING: COSMOS should not be run as the root user, as permissions for Local Mode will be affected. Do not use sudo when running COSMOS. See more: https://docs.openc3.com/docs/guides/local-mode"
+  fi
+}
+
+# Detect SELinux for volume mount suffix
+VOL_SUFFIX=""
+if [ -f /etc/fedora-release ] || [ -f /etc/redhat-release ]; then
+    VOL_SUFFIX=":z"
+fi
+
+case "$1" in
+  cli )
+    # Source the .env file to setup environment variables
+    set -a
+    . "$(dirname -- "$0")/.env"
+
+    # Extract CLI arguments
+    args=$(echo "$@" | { read _ args; echo "$args"; })
+
+    # Run CLI with correct volume mount
+    ${DOCKER_COMPOSE_COMMAND} -f "$(dirname -- "$0")/compose.yaml" run -it --rm \
+      -v "$(pwd)":/openc3/local${VOL_SUFFIX} \
+      -w /openc3/local \
+      -e OPENC3_API_PASSWORD="$OPENC3_API_PASSWORD" \
+      --no-deps openc3-cosmos-cmd-tlm-api \
+      ruby /openc3/bin/openc3cli $args
+
+    set +a
+    ;;
+
+  stop )
+    ${DOCKER_COMPOSE_COMMAND} -f "$(dirname -- "$0")/compose.yaml" stop openc3-operator
+    ${DOCKER_COMPOSE_COMMAND} -f "$(dirname -- "$0")/compose.yaml" stop openc3-cosmos-script-runner-api
+    ${DOCKER_COMPOSE_COMMAND} -f "$(dirname -- "$0")/compose.yaml" stop openc3-cosmos-cmd-tlm-api
+    sleep 5
+    ${DOCKER_COMPOSE_COMMAND} -f "$(dirname -- "$0")/compose.yaml" down -t 30
+    ;;
+
+  cleanup )
+    if [ "$2" == "force" ] || [ "$3" == "force" ]; then
+      ${DOCKER_COMPOSE_COMMAND} -f "$(dirname -- "$0")/compose.yaml" down -t 30 -v
+    else
+      echo "Are you sure? Cleanup removes ALL docker volumes and all COSMOS data! (1-Yes / 2-No)"
+      select yn in "Yes" "No"; do
+        case $yn in
+          Yes ) ${DOCKER_COMPOSE_COMMAND} -f "$(dirname -- "$0")/compose.yaml" down -t 30 -v; break;;
+          No ) exit;;
+        esac
+      done
+    fi
+    if [ "$2" == "local" ]; then
+      cd plugins/DEFAULT
+      ls | grep -xv "README.md" | xargs rm -r
+      cd ../..
+    fi
+    ;;
+
+  start | run )
+    check_root
+    ${DOCKER_COMPOSE_COMMAND} -f "$(dirname -- "$0")/compose.yaml" up -d
+    ;;
+
+  run-ubi )
+    check_root
+    OPENC3_IMAGE_SUFFIX=-ubi OPENC3_REDIS_VOLUME=/home/data ${DOCKER_COMPOSE_COMMAND} -f "$(dirname -- "$0")/compose.yaml" up -d
+    ;;
+
+  upgrade )
+    scripts/linux/openc3_upgrade.sh "${@:2}"
+    ;;
+
+  util )
+    set -a
+    . "$(dirname -- "$0")/.env"
+    scripts/linux/openc3_util.sh "${@:2}"
+    set +a
+    ;;
+
+  * )
+    usage "$0"
+    ;;
+esac

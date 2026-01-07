@@ -1,0 +1,94 @@
+include:
+  - path: ../cosmos-project/compose.yaml
+    env_file: ../cosmos-project/.env
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: netra-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: Netra
+      RABBITMQ_DEFAULT_PASS: "netra@123"
+    ports:
+      - "5673:5672"    # AMQP (host:container)
+      - "15673:15672"  # Management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 15s
+      retries: 5
+ 
+
+  # Postgres Service (Moved from Backend root)
+  db:
+    image: postgres:16
+    container_name: postgres-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: centraDB
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ../db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d centraDB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  netra-backend:
+    build: .
+    container_name: netra-backend
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    # network_mode: "host" REMOVED for bridge networking
+    environment:
+      # ---------- OpenC3 config ----------
+      OPENC3_SCOPE: DEFAULT
+      OPENC3_API_HOSTNAME: "openc3-traefik"
+      OPENC3_API_PORT: "2900"
+      OPENC3_API_PASSWORD: "mos12345"
+
+      # ---------- RabbitMQ: use service name 'rabbitmq' port 5672 ----------
+      RABBITMQ_URL: "amqp://Netra:netra%40123@rabbitmq:5672/%2f?heartbeat=0"
+      RABBITMQ_EXCHANGE: "telemetry.raw"
+
+      # ---------- Postgres: use service name 'db' ----------
+      DB_HOST: "db"
+      DB_PORT: "5432"
+      DB_NAME: "centraDB"
+      DB_USER: "root"
+      DB_PASSWORD: "root"
+
+  netra-db-worker:
+    build: .
+    container_name: netra-db-worker
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      netra-backend:
+        condition: service_started
+      db:
+        condition: service_healthy
+    # network_mode: "host" REMOVED for bridge networking
+    environment:
+      # RabbitMQ Config
+      RABBITMQ_URL: "amqp://Netra:netra%40123@rabbitmq:5672/%2f?heartbeat=0"
+      RABBITMQ_OUTPUT_EXCHANGE: "telemetry.decoded"
+      
+      # Postgres Config
+      DB_HOST: "db"
+      DB_PORT: "5432"
+      DB_NAME: "centraDB"
+      DB_USER: "root"
+      DB_PASSWORD: "root"
+    command: python -m netra_backend.workers.dbworker.dbworker
+
+volumes:
+  db_data:

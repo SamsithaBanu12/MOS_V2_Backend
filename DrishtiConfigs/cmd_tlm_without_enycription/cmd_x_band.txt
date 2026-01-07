@@ -1,0 +1,91 @@
+COMMAND <%= target_name %> 615_TC_FTM_START_CMD BIG_ENDIAN "ftm start"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x4382, daid: 0x8680, tclen: 9 } %>
+  APPEND_PARAMETER RadioId 8 UINT 0 150 5 "radioId"
+      STATE X_Band_1 5
+      STATE X_Band_1 6
+      STATE S_Band 148
+      STATE Dual_X_Band 1
+  APPEND_PARAMETER FTDS_delay 16 UINT 0 29 5 "delay"
+  APPEND_PARAMETER MTU 16 UINT 0 29 5 "mtu"
+  APPEND_PARAMETER Rx_connection_failure 16 UINT 0 29 5 "Rx connection failure"
+  APPEND_PARAMETER Sequence_loss_Enable_Disable 8 UINT 0 29 5 "Sequence loss Enable/Disable"
+  APPEND_PARAMETER Activity_check 8 UINT 0 29 5 "Activity check"
+         SCREEN EMULATOR 615
+
+
+COMMAND <%= target_name %> 616_TC_FTM_STOP_CMD BIG_ENDIAN "ftm stop"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x4482, daid: 0x8680, tclen: 3 } %>
+  APPEND_PARAMETER RadioId 8 UINT 0 29 5 "radioId"
+      STATE X_Band_1 5
+      STATE X_Band_1 6
+      STATE S_Band 148
+      STATE Dual_X_Band 1
+  APPEND_PARAMETER StopDeadline 16 UINT 0 29 5 "delay"
+ 
+
+COMMAND <%= target_name %> 620_TC_MANAGE_FILE_STATE BIG_ENDIAN "file state mgmnt"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0xec02, daid: 0x8680, tclen: 5 } %>
+  APPEND_PARAMETER Number_of_files 8 UINT 0 29 5 "Number_of_files"
+  APPEND_PARAMETER File_Unique_id 16 UINT 0 29 5 "File_Unique_id"
+  APPEND_PARAMETER Operation 8 UINT 0 29 5 "Operation"
+  APPEND_PARAMETER Priority 8 UINT 0 29 5 "Priority"
+
+ 
+
+
+COMMAND <%= target_name %> 619_TC_GET_FILES_IN_DATABASE BIG_ENDIAN "file state mgmnt"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0xeb02, daid: 0x8680, tclen: 5 } %>
+  APPEND_PARAMETER Criteria 8 UINT 0 29 5 "Operation"
+  APPEND_PARAMETER State_Priority 8 UINT 0 29 5 "Priority"
+     SCREEN EMULATOR 619
+
+ 
+COMMAND <%= target_name %> 619_TM_sample_GET_FILES_IN_DATABASE BIG_ENDIAN "file state mgmnt"
+  META TOPIC <%= mqtt_cmd_topic %>
+  <%= render "_cmd_headers.txt", locals: {tcid: 0xeb02, daid: 0x8680, tclen: 9 } %>
+  APPEND_PARAMETER Info1 8 UINT 0 1000 1 "Info"
+  APPEND_PARAMETER Application_Id1 8 UINT 0 200 138 "Application_Id"
+      STATE Edge 1
+      STATE SAR 138
+      STATE MSI 3
+  APPEND_PARAMETER File_Unique_id1 16 UINT 0 1000 242 "File_Unique_id"
+  APPEND_PARAMETER Priority1 8 UINT 0 3 1 "Priority"
+      STATE FILE_DL_PRIORITY_LOW 0
+      STATE FILE_DL_PRIORITY_NORMAL 1
+      STATE FILE_DL_PRIORITY_HIGH 2
+      STATE FILE_DL_PRIORITY_IMMEDIATE 3
+  APPEND_PARAMETER State1 8 UINT 0 3 3  "State"
+      STATE Transfer_not_started 1
+      STATE Partially_transferred 2
+      STATE Transfer_complete 3
+  APPEND_PARAMETER Info2 8 UINT 0 100 1 "Info"
+  APPEND_PARAMETER Application_Id2 8 UINT 0 200 138 "Application_Id"
+      STATE Edge 1
+      STATE SAR 2
+      STATE MSI 3
+  APPEND_PARAMETER File_Unique_id2 16 UINT 0 1000 262 "File_Unique_id"
+  APPEND_PARAMETER Priority2 8 UINT 0 3 1 "Priority"
+      STATE FILE_DL_PRIORITY_LOW 0
+      STATE FILE_DL_PRIORITY_NORMAL 1
+      STATE FILE_DL_PRIORITY_HIGH 2
+      STATE FILE_DL_PRIORITY_IMMEDIATE 3
+  APPEND_PARAMETER State2 8 UINT 0 3 2 "State"
+      STATE Transfer_not_started 1
+      STATE Partially_transferred 2
+      STATE Transfer_complete 3
+  APPEND_PARAMETER Info3 8 UINT 0 1000 1 "Info"
+  APPEND_PARAMETER Application_Id3 8 UINT 0 200 138 "Application_Id"
+      STATE Edge 1
+      STATE SAR 2
+      STATE MSI 3
+  APPEND_PARAMETER File_Unique_id3 16 UINT 0 1000 462 "File_Unique_id"
+  APPEND_PARAMETER Priority3 8 UINT 0 3 2 "Priority"
+      STATE FILE_DL_PRIORITY_LOW 0
+      STATE FILE_DL_PRIORITY_NORMAL 1
+      STATE FILE_DL_PRIORITY_HIGH 2
+      STATE FILE_DL_PRIORITY_IMMEDIATE 3
+  APPEND_PARAMETER State3 8 UINT 0 3 1 "State"
+      STATE Transfer_not_started 1
+      STATE Partially_transferred 2
+      STATE Transfer_complete 3
+

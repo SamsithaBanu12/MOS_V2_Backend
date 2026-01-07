@@ -1,0 +1,33 @@
+{
+  "name": "openc3-cosmos-drishti-5.0.1.gem__20260107111254",
+  "variables": {
+    "emulator_target_name": "EMULATOR",
+    "mqtt_host": "host.docker.internal",
+    "mqtt_port": "2147",
+    "mqtt_cmd_topic": "cosmos/command",
+    "mqtt_tlm_topic": "cosmos/telemetry"
+  },
+  "plugin_txt_lines": [
+    "# Define MQTT connection parameters",
+    "VARIABLE emulator_target_name EMULATOR",
+    "VARIABLE mqtt_host host.docker.internal",
+    "VARIABLE mqtt_port 2147",
+    "VARIABLE mqtt_cmd_topic cosmos/command",
+    "VARIABLE mqtt_tlm_topic cosmos/telemetry",
+    "",
+    "# Define the BOB Target",
+    "TARGET EMULATOR <%= emulator_target_name %>",
+    "",
+    "# Use the OpenC3 MQTT Interface for Python",
+    "INTERFACE EMULATOR_INT openc3/interfaces/mqtt_stream_interface.py <%= mqtt_host %> <%= mqtt_port %> False <%= mqtt_cmd_topic %> <%= mqtt_tlm_topic %>",
+    "  PROTOCOL WRITE EMULATOR/lib/crc_protocol.py CrcProtocol",
+    "  MAP_TARGET <%= emulator_target_name %>",
+    "  LOG_STREAM",
+    "",
+    "  ",
+    "  "
+  ],
+  "needs_dependencies": true,
+  "store_id": null,
+  "updated_at": 1767784376806712618
+}

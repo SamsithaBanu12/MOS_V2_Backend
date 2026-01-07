@@ -1,0 +1,42 @@
+import struct
+from datetime import datetime
+def HEALTH_SENSORS_HSC_EDGE_DATA(hex_str):
+    header_skip_len = 29  # metadata header in bytes
+    tc_len=struct.unpack('<H', bytes.fromhex(hex_str[46:50]))[0]
+    tm_len=tc_len*2 -8
+    submodule_id = int(hex_str[50:52], 16)
+    queue_id = int(hex_str[52:54], 16)
+    count_offset = (header_skip_len - 2) * 2
+
+    count = struct.unpack('<H', bytes.fromhex(hex_str[count_offset:count_offset + 4]))[0]
+    if count == 0:
+        print("[WARN] Sensor count is zero. Skipping parsing.")
+        return []
+
+    segment_len=48
+
+    segment_len1=segment_len
+    data_payload = hex_str[60:60+count * segment_len1]
+
+    segments = []
+    for idx in range(count):
+
+        seg = data_payload[idx * segment_len1:(idx + 1) * segment_len1]
+        if len(seg) < segment_len1:
+           continue
+
+        try:
+            voltage, current, adm_epoch_time = struct.unpack('<ffI', bytes.fromhex(seg[0:24]))
+            timestamp = datetime.utcfromtimestamp(adm_epoch_time).strftime('%Y-%m-%d %H:%M:%S')
+        except Exception as e:
+            print(f"Error unpacking PSM data segment {idx}: {e}")
+            continue
+        segments.append({
+            'Submodule_ID': submodule_id,
+            'Queue_ID': queue_id,
+            'Number of Instances': count,
+            'Voltage':voltage,
+            'Current': current,
+            'adm_epoch_time': timestamp,
+        })
+    return segments

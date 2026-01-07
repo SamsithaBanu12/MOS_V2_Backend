@@ -1,0 +1,8 @@
+[
+    {"subsystemName":"OBC","ms":"01","interval":"10","SrcID":"01","DestID":"81","TCID":"4502","Length":"00000000","Address":"00000000","sequence":""},
+    {"subsystemName":"Thruster","ms":"01","interval":"5","SrcID":"01","DestID":"81","TCID":"0E04","Length":"01000000","Address":"00000000","sequence":""},
+    {"subsystemName":"OBC","ms":"01","interval":"5","SrcID":"01","DestID":"81","TCID":"4502","Length":"02000000","Address":"00000000","sequence":""},
+    {"subsystemName":"OBC","ms":"01","interval":"5","SrcID":"01","DestID":"81","TCID":"4502","Length":"03000000","Address":"00000000","sequence":""},
+    {"subsystemName":"OBC","ms":"01","interval":"5","SrcID":"01","DestID":"81","TCID":"4502","Length":"04000000","Address":"00000000","sequence":""},
+    {"subsystemName":"OBC","ms":"01","interval":"5","SrcID":"01","DestID":"81","TCID":"4502","Length":"05000000","Address":"00000000","sequence":""}
+]

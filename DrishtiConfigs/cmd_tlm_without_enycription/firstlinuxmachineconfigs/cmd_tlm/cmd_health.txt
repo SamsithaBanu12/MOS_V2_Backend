@@ -1,0 +1,24 @@
+COMMAND <%= target_name %> 621_TC_GET_HEALTH_METRICS BIG_ENDIAN "Get Health Metrics"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0xed02, daid: 0x8180, tclen: 4 } %>
+  APPEND_PARAMETER Submodule_ID 8 UINT 0 50 0  "Submodule ID"
+        STATE EPS 9
+        STATE ADCS 22
+        STATE Comms_S 14
+        STATE Comms_UHF 15
+        STATE SENSORS 42
+        STATE OBC 27
+        STATE Error_Handler 38
+  APPEND_PARAMETER queue_ID 8 UINT 0 50 0 "queue ID"
+  APPEND_PARAMETER Priority 8 UINT 0 255 0  "Priority"
+        STATE High 0 
+        STATE Normal 1
+        STATE Low 2  
+        STATE All 0xff
+  APPEND_PARAMETER Option 8 UINT 0 3 0 "Option"
+        STATE get_1_submodule_1_queue 1
+        STATE get_priority_single_module 2
+        STATE get_priority_all_submodule 3
+
+
+COMMAND <%= target_name %> 606_TC_GET_All_Module_Priority BIG_ENDIAN "To get all module priority"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x825E, daid: 0x8180, tclen: 4 } %>

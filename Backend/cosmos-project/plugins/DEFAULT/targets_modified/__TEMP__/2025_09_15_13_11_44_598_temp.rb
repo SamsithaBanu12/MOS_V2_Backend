@@ -1,0 +1,8 @@
+[
+    {"subsystemName":"Turn ON Thruster","ms":"01","interval":"0","SrcID":"01","DestID":"83","TCID":"D300","OFFsetLength":"00000000","Address(actuallength)":"02000000","sequence":"00000011,00000001"},
+    {"subsystemName":"safe limit","ms":"01","interval":"120","SrcID":"01","DestID":"81","TCID":"0904","OFFsetLength":"03000000","Address":"28000000","sequence":"000000f0,00000000,000000dc,000000ff,0000003c,00000000,000000e2,000000ff,0000003c,00000000,000000e2,000000ff,000000f0,00000000,000000dc,000000ff,0000003c,00000000,000000e2,000000ff,0000003c,00000000,000000e2,000000ff,0000003c,00000000,000000e2,000000ff,00000078,00000000,00000088,000000ff,00000046,00000000,000000ce,000000ff,0000003c,00000000,000000c8,00000000"},
+    {"subsystemName":"valve selection","ms":"01","interval":"20","SrcID":"01","DestID":"81","TCID":"0A04","OFFsetLength":"2C000000","Address":"01000000","sequence":"00000003"},
+    {"subsystemName":"firing duration","ms":"01","interval":"20","SrcID":"01","DestID":"81","TCID":"0C04","OFFsetLength":"2E000000","Address":"02000000","sequence":"0000000a,00000000"},
+    {"subsystemName":"operating point","ms":"01","interval":"20","SrcID":"01","DestID":"81","TCID":"0604","OFFsetLength":"31000000","Address":"01000000","sequence":"00000001"},
+    {"subsystemName":"firing mode","ms":"01","interval":"20","SrcID":"01","DestID":"81","TCID":"0704","OFFsetLength":"33000000","Address":"01000000","sequence":"00000003"}
+]

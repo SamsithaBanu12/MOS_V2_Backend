@@ -1,0 +1,120 @@
+COMMAND <%= target_name %> 1030_TC_EXOTRAIL_SET_FIRING_OPERATING_POINT BIG_ENDIAN "set_thruster_firing"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x8604, daid: 0x8180, tclen: 1 } %>
+  APPEND_PARAMETER FIRING_OPERATING_POINT 8 UINT 0 5 1 "Operating Point"
+      STATE Operating_point_1(100W) 0
+      STATE Operating_point_2(125W) 1
+      STATE Operating_point_3(150W) 2
+        SCREEN EMULATOR 1030_screen
+
+
+COMMAND <%= target_name %> 1031_TC_EXOTRAIL_TEST_SET_OBC_MODE BIG_ENDIAN "set_thruster_firing"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x8704, daid: 0x8180, tclen: 1 } %>
+  APPEND_PARAMETER EXOTRIAL_OBC_MODE 8 UINT 0 5 1 "OBC Mode"
+      STATE EXOTRAIL_STANDBY_MODE 0
+      STATE EXOTRAIL_THERMAL_CON_MODE 1
+      STATE EXOTRAIL_THRUST_MODE 2
+      STATE EXOTRAIL_THERMAL_CON_THN_THRUST_MODE 3
+      STATE EXOTRAIL_EOL_PASSIVATION 4
+      STATE EXOTRAIL_COMMISIONING 5
+        SCREEN EMULATOR 1031_screen
+
+
+
+COMMAND <%= target_name %> 1033_TC_EXOTRAIL_SET_SAFE_LIMIT BIG_ENDIAN "set_thruster_firing"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x8904, daid: 0x8180, tclen: 40 } %>
+  APPEND_PARAMETER Maximum_temperature_limit_for_Thruster_Head_Radiator_1 16 UINT 0 1000 240 "max radiator 1"
+  APPEND_PARAMETER Minimum_temperature_limit_for_Thruster_Head_Radiator_1 16 UINT 0 5 1 "min radiator 1"
+  APPEND_PARAMETER Maximum_temperature_limit_for_Thruster_PMS_Anode_1 16 UINT 0 5 1 "max anode 1"
+  APPEND_PARAMETER Minimum_temperature_limit_for_Thruster_PMS_Anode_1 16 UINT 0 5 1 "min anode 1"
+  APPEND_PARAMETER Maximum_temperature_limit_for_Thruster_PMS_Cathode_1 16 UINT 0 5 1 "max cathode 1"
+  APPEND_PARAMETER Minimum_temperature_limit_for_Thruster_PMS_Cathode_1 16 UINT 0 5 1 "min cathode 1"
+  APPEND_PARAMETER Maximum_temperature_limit_for_Thruster_Head_Radiator_2 16 UINT 0 5 1 "max radiator 2"
+  APPEND_PARAMETER Minimum_temperature_limit_for_Thruster_Head_Radiator_2 16 UINT 0 5 1 "min radiator 2"
+  APPEND_PARAMETER Maximum_temperature_limit_for_Thruster_PMS_Anode_2 16 UINT 0 5 1 "max anode 2"
+  APPEND_PARAMETER Minimum_temperature_limit_for_Thruster_PMS_Anode_2 16 UINT 0 5 1 "min anode 2"
+  APPEND_PARAMETER Maximum_temperature_limit_for_Thruster_PMS_Cathode_2 16 UINT 0 5 1 "max cathode 2"
+  APPEND_PARAMETER Minimum_temperature_limit_for_Thruster_PMS_Cathode_2 16 UINT 0 5 1 "min cathode 2"
+  APPEND_PARAMETER Maximum_temperature_limit_for_Thruster_PMS_Pressure_1 16 UINT 0 5 1 "max pms pressure"
+  APPEND_PARAMETER Minimum_temperature_limit_for_Thruster_PMS_Pressure_1 16 UINT 0 5 1 "min pms pressure"
+  APPEND_PARAMETER Maximum_temperature_limit_for_Thruster_Thruster_Head_Supply_1 16 UINT 0 5 1 "max temp for head supply"
+  APPEND_PARAMETER Minimum_temperature_limit_for_Thruster_Head_Supply_1 16 UINT 0 5 1 "min temp for head supply"
+  APPEND_PARAMETER Maximum_temperature_limit_for_Thruster_TCU_OnBoard_Computer_1 16 UINT 0 5 1 "max temp for tcu"
+  APPEND_PARAMETER Minimum_temperature_limit_for_Thruster_TCU_OnBoard_Computer_1 16 UINT 0 5 1 "min temp for tcu"
+  APPEND_PARAMETER Maximum_temperature_for_PPU 16 UINT 0 5 1 "ppu temp"
+  APPEND_PARAMETER Maximum_pressure_for_tank 16 UINT 0 5 1 "tank pressure"
+        SCREEN EMULATOR 1033_screen
+
+
+
+
+COMMAND <%= target_name %> 1034_TC_EXOTRAIL_SET_FLUIDIC_VALVE_SEL BIG_ENDIAN "set_thruster_firing"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x8A04, daid: 0x8180, tclen: 1 } %>
+  APPEND_PARAMETER FLUIDIC_VALVE_SELECTION 8 UINT 0 5 0 "Valve selection"
+      STATE EXOTRAIL_V3_CATHODE_V1_ANODE 0
+      STATE EXOTRAIL_V3_CATHODE_V2_ANODE 1
+      STATE EXOTRAIL_V4_CATHODE_V1_ANODE 2
+      STATE EXOTRAIL_V4_CATHODE_V2_ANODE 3
+        SCREEN EMULATOR 1034_screen
+
+
+
+
+COMMAND <%= target_name %> 1036_TC_EXOTRAIL_SET_FIRING_DURATION BIG_ENDIAN "set_thruster_firing_duration"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x8C04, daid: 0x8180, tclen: 2 } %>
+  APPEND_PARAMETER FIRING_DURATION_IN_MINUTES 16 UINT 0 1000 0 "Firing Duration"
+            SCREEN EMULATOR 1036_screen
+
+
+
+
+COMMAND <%= target_name %> 1038_TC_OBC_EXOTRIAL_THRUSTER_TM_DECODE_DATA BIG_ENDIAN "set_thruster_firing_duration"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x8E04, daid: 0x8180, tclen: 0 } %>
+      SCREEN EMULATOR 1038_screen
+
+
+
+COMMAND <%= target_name %> 1021_TC_EXOTRAIL_GET_SYS_INFO BIG_ENDIAN "set_thruster_firing_duration"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0xFD83, daid: 0x8180, tclen: 0 } %>
+
+
+
+COMMAND <%= target_name %> 1022_TC_EXOTRAIL_GET_HEAT_ACTIVITY BIG_ENDIAN "set_thruster_firing_duration"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0xFE83, daid: 0x8180, tclen: 0 } %>
+
+
+
+COMMAND <%= target_name %> 1023_TC_EXOTRAIL_GET_HK_FLUIDIC_INFO BIG_ENDIAN "set_thruster_firing_duration"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0xFF83, daid: 0x8180, tclen: 0 } %>
+            SCREEN DRISHTI 1023_screen
+
+
+COMMAND <%= target_name %> 1024_TC_EXOTRAIL_GET_HK_FLUIDIC_INFO BIG_ENDIAN "set_thruster_firing_duration"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x8004, daid: 0x8180, tclen: 0 } %>
+
+
+
+COMMAND <%= target_name %> 1025_TC_EXOTRAIL_GET_HK_THERMIC_INFO BIG_ENDIAN "set_thruster_firing_duration"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x8104, daid: 0x8180, tclen: 0 } %>
+             SCREEN DRISHTI 1025_screen
+
+
+COMMAND <%= target_name %> 1026_TC_EXOTRAIL_GET_HK_POWER_INFO BIG_ENDIAN "set_thruster_firing_duration"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x8204, daid: 0x8180, tclen: 0 } %>
+
+
+
+COMMAND <%= target_name %> 1027_TC_EXOTRAIL_GET_SAFE_LIMIT BIG_ENDIAN "set_thruster_firing_duration"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x8304, daid: 0x8180, tclen: 0 } %>
+
+
+
+
+COMMAND <%= target_name %> 1028_TC_EXOTRAIL_GET_FLUIDIC_VALVE_SEL BIG_ENDIAN "set_thruster_firing_duration"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x8404, daid: 0x8180, tclen: 0 } %>
+
+
+
+
+COMMAND <%= target_name %> 1029_TC_EXOTRAIL_GET_HEATER_CFG BIG_ENDIAN "set_thruster_firing_duration"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0x8504, daid: 0x8180, tclen: 0 } %>
+ 

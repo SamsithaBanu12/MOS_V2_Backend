@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  mqtt-broker:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto-broker
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    ports:
+      - "2147:2147"
+    restart: unless-stopped

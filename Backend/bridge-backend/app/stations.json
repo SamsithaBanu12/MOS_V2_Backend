@@ -1,0 +1,44 @@
+[
+  {
+    "id": "gs-a",
+    "name": "Gsite",
+    "broker_b_host": "localhost",
+    "broker_b_port": 50000,
+    "broker_b_username": "gsitedev",
+    "broker_b_password": "gsitepass",
+    "topic_uplink": "SatOS/uplink",
+    "topic_downlink": "SatOS/downlink",
+    "health_host": "localhost",
+    "health_port": 2147,
+    "health_sband_topic": "sband/health",
+    "health_xband_topic": "xband/health"
+  },
+  {
+    "id": "gs-b",
+    "name": "Drishti Flatsat",
+    "broker_b_host": "100.116.217.122",
+    "broker_b_port": 50000,
+    "broker_b_username": "gsitedev",
+    "broker_b_password": "gsitepass",
+    "topic_uplink": "/EXO/uplink",
+    "topic_downlink": "/EXO/downlink",
+    "health_host": "10.0.0.42",
+    "health_port": 2147,
+    "health_sband_topic": "sband/health",
+    "health_xband_topic": "xband/health"
+  },
+  {
+    "id": "gs-c",
+    "name": "Pune Flatsat",
+    "broker_b_host": "bore.pub",
+    "broker_b_port": 23356,
+    "broker_b_username": "gsitedev",
+    "broker_b_password": "gsitepass",
+    "topic_uplink": "EXO/uplink",
+    "topic_downlink": "EXO/downlink",
+    "health_host": "10.0.0.42",
+    "health_port": 2147,
+    "health_sband_topic": "sband/health",
+    "health_xband_topic": "xband/health"
+  }
+]

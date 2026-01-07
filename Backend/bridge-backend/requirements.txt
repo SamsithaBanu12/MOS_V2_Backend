@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pydantic
+sqlalchemy
+aiosqlite
+paho-mqtt
+python-multipart
+pycryptodome

@@ -1,0 +1,35 @@
+COMMAND <%= target_name %> 200_EPS_TC_GET_SUB_SYS_INFO BIG_ENDIAN "Get EPS Info"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0xC880, daid: 0x8380, tclen: 0 } %>
+      SCREEN EMULATOR panel_stats
+
+COMMAND <%= target_name %> 201_EPS_TC_GET_CONF BIG_ENDIAN "Get EPS Info"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0xC980, daid: 0x8380, tclen: 0 } %>
+      SCREEN EMULATOR panel_stats
+
+COMMAND <%= target_name %> 211_EPS_TC_Set_EPS_Channel_status BIG_ENDIAN "Get EPS Info"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0xD380, daid: 0x8380, tclen: 2 } %>
+  APPEND_PARAMETER Channel_no 8 UINT 0 29 0 "Channel no"
+      STATE OBC 1
+      STATE PSBoard 3
+      STATE ADCS 07
+      STATE UHF 09
+      STATE S-Band 11
+      STATE X-Band-1 13
+      STATE X-Band-2 14
+      STATE Edge 15
+      STATE Thruster 17
+      STATE MSI 19
+      STATE SES-A 20
+      STATE SES-B 21
+      STATE SAS-A 22
+      STATE UHF-Burnwire 23
+      STATE SAS-B 24
+
+  APPEND_PARAMETER Channel_state 8 UINT 0 29 0 "Channel_state"
+      STATE off 0
+      STATE on 1
+    SCREEN EMULATOR set_eps
+
+COMMAND <%= target_name %> 212_EPS_TC_GET_DEV_HW_STATUS BIG_ENDIAN "Get EPS Info"
+  <%= render "_cmd_headers.txt", locals: {tcid: 0xD480, daid: 0x8380, tclen: 0 } %>
+    SCREEN EMULATOR eps_state

@@ -1,0 +1,5 @@
+COMMAND <%= target_name %> FTM_SEND_DATA_PCKTS BIG_ENDIAN "Send ftm packets"
+  META TOPIC <%= mqtt_cmd_topic %>
+  APPEND_PARAMETER FTM_PACKETS 0 BLOCK ""
+
+

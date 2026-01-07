@@ -1,0 +1,5 @@
+SCREEN AUTO AUTO 1.0
+TITLE "Firing Operating Point"
+VERTICALBOX "Information"
+  LABELVALUE EMULATOR 615_Start_FTM Status
+END
