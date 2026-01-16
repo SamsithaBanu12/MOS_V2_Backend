@@ -1,3 +1,6 @@
+import struct
+from datetime import datetime
+
 def HEALTH_SENSORS_DT_EDGE_DATA(hex_str):
     header_skip_len = 29  # metadata header in bytes
     tc_len=struct.unpack('<H', bytes.fromhex(hex_str[46:50]))[0]

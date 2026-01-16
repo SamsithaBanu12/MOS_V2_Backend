@@ -95,13 +95,42 @@ def _f32le(buf: bytes, pos: int, where="f32le") -> Tuple[float, int]:
     return struct.unpack("<f", buf[pos:pos+4])[0], pos + 4
 
 def _fmt_ist(ts_seconds: int) -> str:
-    if IST is not None:
-        dt = datetime.fromtimestamp(ts_seconds, tz=IST)
-    else:
-        dt = datetime.fromtimestamp(ts_seconds)
-    s = dt.strftime("%B %d, %Y %I:%M:%S %p")
-    s = s.replace(" 0", " ")
-    return s
+    """
+    Format timestamp to IST string. Handles timestamps in seconds, milliseconds, or microseconds.
+    Falls back to raw value string if conversion fails.
+    """
+    # Validate and convert timestamp
+    # Unix timestamps in seconds should be reasonable (e.g., between 2000-2100)
+    # 946684800 = Jan 1, 2000
+    # 4102444800 = Jan 1, 2100
+    
+    original_ts = ts_seconds
+    
+    # If timestamp is too large, it's likely in milliseconds or microseconds
+    if ts_seconds > 4102444800:
+        # Try milliseconds (divide by 1000)
+        if ts_seconds > 4102444800000:
+            # Likely microseconds (divide by 1000000)
+            ts_seconds = ts_seconds // 1000000
+        else:
+            # Likely milliseconds (divide by 1000)
+            ts_seconds = ts_seconds // 1000
+    
+    # If still unreasonable, return raw value
+    if ts_seconds < 0 or ts_seconds > 4102444800:
+        return f"INVALID_TS({original_ts})"
+    
+    try:
+        if IST is not None:
+            dt = datetime.fromtimestamp(ts_seconds, tz=IST)
+        else:
+            dt = datetime.fromtimestamp(ts_seconds)
+        s = dt.strftime("%B %d, %Y %I:%M:%S %p")
+        s = s.replace(" 0", " ")
+        return s
+    except (OSError, ValueError, OverflowError) as e:
+        # If conversion still fails, return raw value
+        return f"INVALID_TS({original_ts})"
 
 
 # -----------------------------

@@ -151,35 +151,35 @@ services:
   # ---------------------------------------------------------------------------
   # File Upload Service
   # ---------------------------------------------------------------------------
-  file-upload:
-    build:
-      context: ./FileUpload
-    container_name: file-upload-service
-    ports:
-      - "8080:8080"
-    networks:
-      - default
-      - cosmos-project_default
-    environment:
-      - C2_API_URL=http://openc3-traefik:2900/openc3-api/api
-      - PYTHONUNBUFFERED=1
-      - LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - ./FileUpload/uploads:/app/uploads
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+  # file-upload:
+  #   build:
+  #     context: ./FileUpload
+  #   container_name: file-upload-service
+  #   ports:
+  #     - "8080:8080"
+  #   networks:
+  #     - default
+  #     - cosmos-project_default
+  #   environment:
+  #     - C2_API_URL=http://openc3-traefik:2900/openc3-api/api
+  #     - PYTHONUNBUFFERED=1
+  #     - LD_LIBRARY_PATH=/app/lib:$LD_LIBRARY_PATH
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   volumes:
+  #     - ./FileUpload/uploads:/app/uploads
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: [ "CMD", "curl", "-f", "http://localhost:8080/" ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
 
   # ---------------------------------------------------------------------------
   # Schedule Upload Service

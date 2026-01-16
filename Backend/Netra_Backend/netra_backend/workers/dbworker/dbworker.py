@@ -2,13 +2,51 @@ import json
 import logging
 import os
 import time
+import re
 import pika
-from typing import Dict, Any
+from datetime import datetime, timezone
+from typing import Dict, Any, List
 
 from netra_backend.logging_config import setup_logging
 from netra_backend.db_client import PostgresClient
 
 logger = logging.getLogger("db_worker")
+
+# Pattern to detect ISO 8601 datetime strings (with or without timezone)
+ISO_DATETIME_PATTERN = re.compile(
+    r'^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?$'
+)
+
+
+def _convert_datetime_fields(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Convert ISO datetime string fields back to datetime objects.
+    This is needed because JSON serialization converts datetime to strings.
+    """
+    converted_rows = []
+    for row in rows:
+        converted_row = {}
+        for key, value in row.items():
+            if isinstance(value, str) and ISO_DATETIME_PATTERN.match(value):
+                try:
+                    # Handle various ISO formats
+                    if value.endswith('Z'):
+                        # UTC format: 2026-01-09T08:57:03Z
+                        dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                    elif 'T' in value or ' ' in value:
+                        dt = datetime.fromisoformat(value)
+                    else:
+                        dt = value  # Not a datetime, keep as string
+                    logger.debug("Converted datetime field %s: %s -> %s (type: %s)", 
+                                 key, value, dt, type(dt).__name__)
+                    converted_row[key] = dt
+                except ValueError as e:
+                    logger.warning("Failed to parse datetime field %s=%s: %s", key, value, e)
+                    converted_row[key] = value  # Keep as string if parsing fails
+            else:
+                converted_row[key] = value
+        converted_rows.append(converted_row)
+    return converted_rows
 
 class DBWorkerService:
     def __init__(self):
@@ -102,6 +140,15 @@ class DBWorkerService:
                 parts = target_table.split("__")
                 if len(parts) >= 4 and parts[2] == "EMULATOR":
                      target_table = "__".join(parts[3:])
+            
+            # Convert ISO datetime strings back to datetime objects
+            # (JSON serialization converts datetime to strings)
+            rows = _convert_datetime_fields(rows)
+            
+            # Log sample row to verify conversion happened
+            sample_row = rows[0]
+            logger.info("Sample row after conversion: %s", 
+                       {k: f"{v} (type: {type(v).__name__})" for k, v in sample_row.items()})
             
             self.db.ensure_table_for_packet(target_table, rows[0])
             self.db.insert_rows(target_table, rows)

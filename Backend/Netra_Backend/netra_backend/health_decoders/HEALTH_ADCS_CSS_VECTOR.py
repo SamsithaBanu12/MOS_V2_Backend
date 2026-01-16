@@ -1,39 +1,40 @@
-import struct
-from datetime import datetime
 
+import struct 
+from datetime import datetime, timezone
 
 def HEALTH_ADCS_CSS_VECTOR(hex_str):
     # hex_str is expected to be a continuous hex string (no spaces)
     
-    # 1. First 26 bytes (52 hex chars) are simple skip
+    # 1. First 26 bytes (52 hex chars) are metadata skip
     header_skip_bytes = 26
     header_skip_chars = header_skip_bytes * 2
     
-    # Ensure we have enough data for the header
-    if len(hex_str) < (header_skip_chars + 8): # 26 skip + 1 sub + 1 queue + 2 count = 30 bytes min
+    # Ensure we have enough data for the header (Submodule + Queue + NumInstance = 4 bytes)
+    if len(hex_str) < (header_skip_chars + 8): 
         print(f"[ERROR] Insufficient data length: {len(hex_str)}")
         return []
 
     # 2. Decoding follows little endian format
     
-    # Submodule ID: 1 byte at offset 26
+    # Submodule ID: byte 26
     submodule_id = int(hex_str[header_skip_chars : header_skip_chars+2], 16)
     
-    # Queue ID: 1 byte at offset 27
+    # Queue ID: byte 27
     queue_id = int(hex_str[header_skip_chars+2 : header_skip_chars+4], 16)
     
-    # Number of instances: 2 bytes at offset 28
+    # Number of instances: 2 bytes at byte 28-29
     count_hex = hex_str[header_skip_chars+4 : header_skip_chars+8]
     count = struct.unpack('<H', bytes.fromhex(count_hex))[0]
     
     if count == 0:
-        print("[WARN] Sensor count is zero. Skipping parsing.")
+        print(f"[WARN] Sensor count is zero (Parsed from hex: {count_hex}). Skipping parsing.")
         return []
 
-    # Data starts at offset 30 bytes (60 chars)
+    # 3. Data starts at byte 30
     data_start_idx = header_skip_chars + 8
     data_payload = hex_str[data_start_idx:]
     
+    # Segment Length = 11 bytes = 22 hex chars
     segment_len_bytes = 11
     segment_len_chars = segment_len_bytes * 2
     
@@ -42,26 +43,23 @@ def HEALTH_ADCS_CSS_VECTOR(hex_str):
     for idx in range(count):
         start = idx * segment_len_chars
         end = start + segment_len_chars
-        
         seg = data_payload[start:end]
         
         if len(seg) < segment_len_chars:
             break
             
-        # Segment Structure:
-        # 0   (1 byte) : Operation Status (UINT)
-        # 1-4 (4 bytes): Epoch Time (UINT)
-        # 5-6 (2 bytes): X axis Sun Vector (INT) * 0.001
-        # 7-8 (2 bytes): Y axis Sun Vector (INT) * 0.001
-        # 9-10(2 bytes): Z axis Sun Vector (INT) * 0.001
-        
         try:
+            # Segment Structure:
+            # Status: uint8 (1 byte)
             operation_status = int(seg[0:2], 16)
             
-            epoch_bytes = bytes.fromhex(seg[2:10])
-            epoch_time = struct.unpack('<I', epoch_bytes)[0]
-            epoch_time_human = datetime.utcfromtimestamp(epoch_time).strftime('%Y-%m-%d %H:%M:%S')
+            # Epoch Time: uint32 (4 bytes)
+            epoch_hex = seg[2:10]
+            epoch_time = struct.unpack('<I', bytes.fromhex(epoch_hex))[0]
+            # Formatted string for human readability (DB client will now detect this as TIMESTAMP)
+            epoch_time_human = datetime.fromtimestamp(epoch_time, tz=timezone.utc)
             
+            # Sun Vector X, Y, Z: int16 (2 bytes each) * 0.001
             css_vector_x = struct.unpack('<h', bytes.fromhex(seg[10:14]))[0] * 0.001
             css_vector_y = struct.unpack('<h', bytes.fromhex(seg[14:18]))[0] * 0.001
             css_vector_z = struct.unpack('<h', bytes.fromhex(seg[18:22]))[0] * 0.001
@@ -81,3 +79,7 @@ def HEALTH_ADCS_CSS_VECTOR(hex_str):
             continue
             
     return segments
+
+# Test hex string with 26-byte skip, then Submodule(01), Queue(07), Count(08 00)
+# Then 11-byte segments
+

@@ -31,7 +31,7 @@
     "id": "gs-c",
     "name": "Pune Flatsat",
     "broker_b_host": "bore.pub",
-    "broker_b_port": 23356,
+    "broker_b_port": 35751,
     "broker_b_username": "gsitedev",
     "broker_b_password": "gsitepass",
     "topic_uplink": "EXO/uplink",

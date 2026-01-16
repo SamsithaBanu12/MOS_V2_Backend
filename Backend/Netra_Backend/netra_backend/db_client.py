@@ -1,22 +1,25 @@
 # netra_backend/db_client.py
+import psycopg2
 import logging
 import os
 from typing import Dict, List, Any, Set
 
 import psycopg2
 from psycopg2.extras import execute_values
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-
 def _infer_pg_type(value: Any) -> str:
-    """Very simple type inference: int -> BIGINT, float -> DOUBLE PRECISION, bool -> BOOLEAN, else TEXT."""
+    """Very simple type inference: int -> BIGINT, float -> DOUBLE PRECISION, bool -> BOOLEAN, datetime -> TIMESTAMPTZ, else TEXT."""
     if isinstance(value, bool):
         return "BOOLEAN"
     if isinstance(value, int):
         return "BIGINT"
     if isinstance(value, float):
         return "DOUBLE PRECISION"
+    if isinstance(value, datetime):
+        return "TIMESTAMPTZ"
     return "TEXT"
 
 
@@ -60,18 +63,37 @@ class PostgresClient:
         self.conn.autocommit = True
         logger.info("Connected to Postgres")
 
+    def _table_exists_in_db(self, table_name: str) -> bool:
+        """Check if table actually exists in the database."""
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = %s
+                );
+            """, (table_name,))
+            return cur.fetchone()[0]
+
     def ensure_table_for_packet(self, packet_table: str, sample_row: Dict[str, Any]) -> None:
         """
         Ensure a table exists for this packet.
         Table name will be quoted exactly as provided (so use UPPERCASE if you like).
         """
+        # If we think it exists, verify it actually does in the DB
         if packet_table in self._known_tables:
-            return
+            if self._table_exists_in_db(packet_table):
+                logger.info("Table %s already exists in DB, skipping creation", packet_table)
+                return
+            else:
+                # Table was deleted externally, remove from cache
+                self._known_tables.discard(packet_table)
+                logger.warning("Table %s was deleted externally, recreating...", packet_table)
 
         columns_sql_parts = []
         for key, value in sample_row.items():
             col_type = _infer_pg_type(value)
             col_name = key  # assume safe; if needed, sanitize externally
+            logger.info("  Column '%s': value=%s, inferred_type=%s", col_name, type(value).__name__, col_type)
             columns_sql_parts.append(f'"{col_name}" {col_type}')
 
         # Add a simple surrogate PK id and a timestamp
@@ -83,7 +105,7 @@ class PostgresClient:
         table_quoted = f'"{packet_table}"'
         create_sql = f"CREATE TABLE IF NOT EXISTS {table_quoted} ({columns_sql});"
 
-        logger.info("Ensuring table exists for packet %s", packet_table)
+        logger.info("Creating table %s with SQL: %s", packet_table, create_sql)
         with self.conn.cursor() as cur:
             cur.execute(create_sql)
 
@@ -107,8 +129,17 @@ class PostgresClient:
         insert_sql = f"INSERT INTO {table_quoted} ({columns_sql}) VALUES %s"
 
         logger.debug("Inserting %d rows into %s", len(rows), packet_table)
-        with self.conn.cursor() as cur:
-            execute_values(cur, insert_sql, values)
+        try:
+            with self.conn.cursor() as cur:
+                execute_values(cur, insert_sql, values)
+        except psycopg2.errors.UndefinedTable:
+            # Table was deleted between check and insert, recreate and retry
+            logger.warning("Table %s disappeared during insert, recreating...", packet_table)
+            self._known_tables.discard(packet_table)
+            self.ensure_table_for_packet(packet_table, rows[0])
+            # Retry insert
+            with self.conn.cursor() as cur:
+                execute_values(cur, insert_sql, values)
 
     def _ensure_decoder_not_found_table(self) -> None:
         """

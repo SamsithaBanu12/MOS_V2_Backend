@@ -44,10 +44,6 @@ def _decode_buffer_to_hex(buffer_b64: str) -> str:
 
 
 def _get_decoder_for_packet(packet_name: str):
-    """
-    Given full __packet like 'RAW__TLM__EMULATOR__HEALTH_ADCS_EST_ATTITUDE_ANGLE',
-    we want decoder module/function from health_decoders package.
-    """
     parts = packet_name.split("__")
     if len(parts) < 4:
         raise DecoderNotFound(f"Unexpected packet name format: {packet_name}")
@@ -140,10 +136,25 @@ class HealthConsumerService:
         )
         self._publisher_channel = channel
 
-        # We assume queues are already declared by ws_ingestor (pkt.<packet_name>).
-        # Here we just start consuming those that correspond to health packets.
+        # Ensure input exchange exists (idempotent)
+        channel.exchange_declare(
+            exchange=self.input_exchange,
+            exchange_type='direct',
+            durable=True
+        )
+
+        # We declare and bind queues to ensure they exist (idempotent)
+        # This prevents 404 errors if health_consumer starts before ws_ingestor
         for pkt_name in self.health_packets:
             queue_name = f"pkt.{pkt_name}"
+            
+            channel.queue_declare(queue=queue_name, durable=True)
+            channel.queue_bind(
+                exchange=self.input_exchange,
+                queue=queue_name,
+                routing_key=pkt_name
+            )
+
             logger.info("Subscribing to queue %s for packet %s", queue_name, pkt_name)
             channel.basic_consume(
                 queue=queue_name,
@@ -190,20 +201,15 @@ class HealthConsumerService:
             hex_str = _decode_buffer_to_hex(buffer_b64)
         except Exception as e:
             logger.exception("Error converting buffer to hex for packet %s", packet_name)
-            # treat as decoder failed (can't even get hex)
-        except Exception as e:
-            logger.exception("Error converting buffer to hex for packet %s", packet_name)
             # Log error via logging, or publish to an error topic if desired.
             # For now, just ack and move on to prevent poison pill.
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
         # Find decoder
+        # Find decoder
         try:
             core_name, decoder_fn = _get_decoder_for_packet(packet_name)
-        except DecoderNotFound as e:
-            logger.warning("Decoder not found for packet %s: %s", packet_name, e)
-            # CASE: decoder not present
         except DecoderNotFound as e:
             logger.warning("Decoder not found for packet %s: %s", packet_name, e)
             # You could publish a "decoder.error" event here
@@ -211,18 +217,18 @@ class HealthConsumerService:
             return
 
         # Run decoder
+        # Run decoder
         try:
             segments = decoder_fn(hex_str)
         except Exception as e:
             logger.exception("Decoder error for packet %s", packet_name)
-            # CASE: decoder present but failed
-        except Exception as e:
-            logger.exception("Decoder error for packet %s", packet_name)
+            # Log error via logging, or publish to an error topic if desired.
+            # For now, just ack and move on to prevent poison pill.
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
         if not segments:
-            logger.info("Decoder returned no segments for packet %s", packet_name)
+            logger.info("Decoder returned no segments for packet %s. Hex payload: %s", packet_name, hex_str)
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
@@ -244,7 +250,7 @@ class HealthConsumerService:
             self._publisher_channel.basic_publish(
                 exchange=self.output_exchange,
                 routing_key=routing_key,
-                body=json.dumps(payload),
+                body=json.dumps(payload, default=str),
                 properties=pika.BasicProperties(
                     delivery_mode=2,  # make message persistent
                     content_type='application/json'
