@@ -110,6 +110,12 @@ class DBWorkerService:
                 connection.close()
 
     def _on_message(self, ch, method, properties, body):
+        # Log the raw message to see exactly what is in the queue
+        try:
+            logger.info("Raw message from decoded q: %s", body.decode("utf-8"))
+        except:
+            logger.info("Raw message from decoded q (bytes): %s", body)
+
         """
         Payload structure from health_consumer:
         {
