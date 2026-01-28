@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Request
+from fastapi import APIRouter, Request, HTTPException
 from app.gateway.proxy import proxy_request
 
 router = APIRouter()

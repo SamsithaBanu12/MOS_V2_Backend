@@ -12,8 +12,10 @@ async def proxy_request(request: Request, user: dict) -> Response:
     target_base, prefix = resolve_service(request.url.path)
     
     # Strip prefix and join with target base
-    path = request.url.path[len(prefix):].lstrip("/")
-    target_url = f"{target_base.rstrip('/')}/{path}"
+    sub_path = request.url.path[len(prefix):].lstrip("/")
+    target_url = target_base.rstrip('/')
+    if sub_path:
+        target_url += f"/{sub_path}"
     
     if request.query_params:
         target_url += f"?{request.query_params}"
