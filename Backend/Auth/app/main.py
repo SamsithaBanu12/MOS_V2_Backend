@@ -2,7 +2,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routers import auth
+from app.routers import auth,gateway
+from app.gateway.middleware import AuthMiddleware
 
 
 @asynccontextmanager
@@ -27,7 +28,7 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
-
+app.add_middleware(AuthMiddleware)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
@@ -39,7 +40,6 @@ app.add_middleware(
 
 # Register routers
 app.include_router(auth.router)
-
 
 @app.get("/", tags=["Health"])
 async def root():
@@ -58,3 +58,6 @@ async def health_check():
         "status": "healthy",
         "database": "connected"
     }
+
+# Gateway catch-all should be registered last
+app.include_router(gateway.router, tags=["Gateway"])

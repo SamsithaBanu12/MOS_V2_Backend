@@ -20,9 +20,11 @@ async def init_db():
         
         # Create permissions
         permissions = [
-            Permission(name="is_kalpass"),
-            Permission(name="is_netra"),
-            Permission(name="is_c2"),
+            Permission(name="create_user"),
+            Permission(name="send_command"),
+            Permission(name="edit_grafana"),
+            Permission(name="file_upload"),
+            Permission(name="schedule_upload"),
         ]
         
         # Create a map for easy access
@@ -33,33 +35,47 @@ async def init_db():
         
         print(f"Created {len(permissions)} permissions")
         
+        # Helper to get all permissions except create_user
+        restricted_permissions = [p for p in permissions if p.name != "create_user"]
+        
         print("Creating roles...")
         
-        # Create SUPER_ADMIN role with all permissions
+        # 1. SUPER_ADMIN: All permissions
         super_admin_role = Role(name="SUPER_ADMIN")
         super_admin_role.permissions = permissions
         
-        # Create ADMIN role with is_netra and is_c2
+        # 2. ADMIN: All except create_user
         admin_role = Role(name="ADMIN")
-        admin_role.permissions = [
-            perm_map["is_netra"],
-            perm_map["is_c2"]
-        ]
+        admin_role.permissions = restricted_permissions
         
-        # Create OPERATOR role with only is_netra
-        operator_role = Role(name="OPERATOR")
-        operator_role.permissions = [
-            perm_map["is_netra"]
-        ]
+        # 3. MISSION_OPERATOR: Same as ADMIN
+        mission_operator_role = Role(name="MISSION_OPERATOR")
+        mission_operator_role.permissions = restricted_permissions
         
-        session.add_all([super_admin_role, admin_role, operator_role])
+        # 4. SYS_ENGINEER: Same as ADMIN
+        sys_engineer_role = Role(name="SYS_ENGINEER")
+        sys_engineer_role.permissions = restricted_permissions
+        
+        # 5. USER: No permissions
+        user_role = Role(name="USER")
+        user_role.permissions = []
+        
+        session.add_all([
+            super_admin_role, 
+            admin_role, 
+            mission_operator_role, 
+            sys_engineer_role, 
+            user_role
+        ])
         await session.commit()
         
-        print("Created roles: SUPER_ADMIN, ADMIN, OPERATOR")
+        print("Created roles: SUPER_ADMIN, ADMIN, MISSION_OPERATOR, SYS_ENGINEER, USER")
         print("\nRole permissions:")
         print(f"  - SUPER_ADMIN: {[p.name for p in super_admin_role.permissions]}")
         print(f"  - ADMIN: {[p.name for p in admin_role.permissions]}")
-        print(f"  - OPERATOR: {[p.name for p in operator_role.permissions]}")
+        print(f"  - MISSION_OPERATOR: {[p.name for p in mission_operator_role.permissions]}")
+        print(f"  - SYS_ENGINEER: {[p.name for p in sys_engineer_role.permissions]}")
+        print(f"  - USER: {[p.name for p in user_role.permissions]}")
         print("\n✅ Database initialized successfully!")
 
 
