@@ -299,6 +299,8 @@ def HEALTH_EPS(hex_str: str) -> List[Dict[str, Any]]:
 
         seg.update({
             "Timestamp": None,
+            "Epoch_Time": None,
+            "Epoch_Time_Human": None,
             "Power_Generated_Last_Orbit_Wh": None,
             "Power_Consumed_Last_Orbit_Wh": None,
             "Total_Power_Generated_Wh": None,
@@ -353,6 +355,21 @@ def HEALTH_EPS(hex_str: str) -> List[Dict[str, Any]]:
 
         # ---- Prefix ----
         ts, pos = _u32le(buf, pos, "Timestamp")
+
+        # Normalize timestamp (handle ms/us)
+        norm_ts = ts
+        if norm_ts > 4102444800:
+            if norm_ts > 4102444800000:
+                norm_ts //= 1000000
+            else:
+                norm_ts //= 1000
+
+        seg["Epoch_Time"] = int(norm_ts)
+        try:
+            seg["Epoch_Time_Human"] = datetime.utcfromtimestamp(norm_ts).strftime('%Y-%m-%d %H:%M:%S')
+        except Exception:
+            seg["Epoch_Time_Human"] = None
+
         seg["Timestamp"] = _fmt_ist(ts)
 
         pg_last, pos = _u32le(buf, pos, "Power Generated Last Orbit")
