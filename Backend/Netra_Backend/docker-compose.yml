@@ -10,14 +10,13 @@ services:
       RABBITMQ_DEFAULT_USER: Netra
       RABBITMQ_DEFAULT_PASS: "netra@123"
     ports:
-      - "5673:5672"    # AMQP (host:container)
-      - "15673:15672"  # Management UI
+      - "5673:5672" # AMQP (host:container)
+      - "15673:15672" # Management UI
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 5s
       timeout: 15s
       retries: 5
- 
 
   # Postgres Service (Moved from Backend root)
   db:
@@ -34,7 +33,7 @@ services:
       - db_data:/var/lib/postgresql/data
       - ../db/init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root -d centraDB"]
+      test: [ "CMD-SHELL", "pg_isready -U root -d centraDB" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -81,7 +80,7 @@ services:
       # RabbitMQ Config
       RABBITMQ_URL: "amqp://Netra:netra%40123@rabbitmq:5672/%2f?heartbeat=0"
       RABBITMQ_OUTPUT_EXCHANGE: "telemetry.decoded"
-      
+
       # Postgres Config
       DB_HOST: "db"
       DB_PORT: "5432"

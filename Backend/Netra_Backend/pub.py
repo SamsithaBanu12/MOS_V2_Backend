@@ -2,7 +2,7 @@ import paho.mqtt.client as mqtt
 BROKER_HOST = "127.0.0.1"   # change if your broker is on another machine
 BROKER_PORT = 2147
 TOPIC = "cosmos/telemetry"
-HEX_STR=" 8c c5 78 00 a5 aa f0 12 ff 26 69 3b 01 00 00 81 00 04 6d 02 01 01 ff ff 14 00 04 04 02 00 00 00 0b 42 23 fe 26 69 00 00 09 42 9b fe 26 69 8d da 40 ad a9 4a 31 90 7a 46 1e 8b 72 51 0b e4 ef 6c e7 77 15 50 56 23 cb 44 77 43 e2 41 13 2a a0 ba"
+HEX_STR="8c c5 74 00 a5 aa f0 f2 f7 74 67 d9 1d 00 00 81 00 04 6d 02 01 01 ff ff a3 00 05 00 01 00 c6 f7 74 67 00 00 00 00 01 00 00 00 00 fc f2 58 41 00 24 d9 1e 82 61 55 01 3a 07 00 00 00 40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 e1 6b fd 6a 1c c3 56 33 a7 83 e9 32 e3 bd 6a 1d 20 16 40 0b eb 4f 08 bd 38 5a 45 3d d2 0a 34 5f 3e ba"
 
 def main():
     # Convert hex string to raw bytes
