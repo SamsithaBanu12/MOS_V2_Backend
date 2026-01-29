@@ -1,47 +1,72 @@
 import struct
-from datetime import datetime
+from datetime import datetime, timezone
 
 def HEALTH_ADCS_SAT_VEL_ECI_FRAME(hex_str):
-    header_skip_len = 29  # metadata header in bytes
-    tc_len=struct.unpack('<H', bytes.fromhex(hex_str[46:50]))[0]
-    tm_len=tc_len*2 -8
-    submodule_id = int(hex_str[50:52], 16)
-    queue_id = int(hex_str[52:54], 16)
-    count_offset = (header_skip_len - 2) * 2
-
-    count = struct.unpack('<H', bytes.fromhex(hex_str[count_offset:count_offset + 4]))[0]
-    if count == 0:
-        print("[WARN] Sensor count is zero. Skipping parsing.")
+    # 1. Skip standard metadata header (26 bytes)
+    header_skip_bytes = 26
+    header_skip_chars = header_skip_bytes * 2
+    
+    if len(hex_str) < (header_skip_chars + 8):
+        # Need at least header + 1B sub + 1B queue + 2B count
         return []
 
-    segment_len=58
+    # 2. Decoding QM metadata
+    submodule_id = int(hex_str[header_skip_chars : header_skip_chars+2], 16)
+    queue_id = int(hex_str[header_skip_chars+2 : header_skip_chars+4], 16)
+    
+    # Instance count (UINT16 at bytes 28-29)
+    count_hex = hex_str[header_skip_chars+4 : header_skip_chars+8]
+    count = struct.unpack('<H', bytes.fromhex(count_hex))[0]
+    
+    if count == 0:
+        print(f"[WARN] Sensor count is zero. Skipping parsing.")
+        return []
 
-    segment_len1=58
-    data_payload = hex_str[60:60+count * segment_len]
+    # 3. Data payload starts at byte 30
+    # Each segment is 29 bytes:
+    # 1 byte Operation Status
+    # 4 bytes Epoch Time
+    # 8 bytes X Velocity (Double)
+    # 8 bytes Y Velocity (Double)
+    # 8 bytes Z Velocity (Double)
+    segment_bytes = 1 + 4 + 8 + 8 + 8
+    segment_chars = segment_bytes * 2
 
+    data_start_idx = header_skip_chars + 8
+    data_payload = hex_str[data_start_idx:]
+    
     segments = []
+    
     for idx in range(count):
+        start_char = idx * segment_chars
+        end_char = start_char + segment_chars
+        
+        if len(data_payload) < end_char:
+            break
+            
+        seg_hex = data_payload[start_char : end_char]
+        
+        try:
+            # Unpack: B (1), I (4), d (8), d (8), d (8)
+            # Total 29 bytes
+            operation_status, epoch_time, vx, vy, vz = struct.unpack('<BIddd', bytes.fromhex(seg_hex))
+            
+            # Using timezone-aware UTC datetime
+            epoch_time_human = datetime.fromtimestamp(epoch_time, timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            
+            segments.append({
+                'Submodule_ID': submodule_id,
+                'Queue_ID': queue_id,
+                'Number of Instances': count,
+                'Operation_Status': operation_status,
+                'Epoch_Time_Human': epoch_time_human,
+                'Sat_Vel_ECI_X': vx,
+                'Sat_Vel_ECI_Y': vy,
+                'Sat_Vel_ECI_Z': vz
+            })
+        except struct.error as e:
+            print(f"[ERROR] Struct unpack failed for instance {idx}: {e}")
+            continue
 
-        seg = data_payload[idx * segment_len1:(idx + 1) * segment_len1]
-        if len(seg) < segment_len1:
-           continue
-        operation_status = int(seg[0:2], 16)
-        epoch_bytes = bytes.fromhex(seg[2:10])
-        epoch_time = struct.unpack('<I', epoch_bytes)[0]
-        epoch_time_human = datetime.utcfromtimestamp(epoch_time) \
-                                .strftime('%Y-%m-%d %H:%M:%S')
-        sat_pos_eci_x = struct.unpack('<d', bytes.fromhex(seg[10:26]))[0] 
-        sat_pos_eci_y = struct.unpack('<d', bytes.fromhex(seg[26:42]))[0] 
-        sat_pos_eci_z = struct.unpack('<d', bytes.fromhex(seg[42:58]))[0] 
-        segments.append({
-            'Submodule_ID':           submodule_id,
-            'Queue_ID':               queue_id,
-            'Number of Instances':                   count,
-            'Operation_Status':       operation_status,
-            'Epoch_Time_Human':       epoch_time_human,
-            'Sat_Vel_ECI_X':          sat_pos_eci_x,
-            'Sat_Vel_ECI_Y':          sat_pos_eci_y,
-            'Sat_Vel_ECI_Z':          sat_pos_eci_z
-        })
     return segments
 

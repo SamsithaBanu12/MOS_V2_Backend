@@ -1,67 +1,86 @@
-import struct 
-from datetime import datetime
+import struct
+from datetime import datetime, timezone
+
 def HEALTH_ADCS_RW_CURRENT(hex_str):
-    header_skip_len = 29  # metadata header in bytes
-    tc_len = struct.unpack('<H', bytes.fromhex(hex_str[46:50]))[0]
-    tm_len = tc_len * 2 - 8
-
-    submodule_id = int(hex_str[50:52], 16)
-    queue_id = int(hex_str[52:54], 16)
-
-    count_offset = (header_skip_len - 2) * 2
-    count = struct.unpack('<H', bytes.fromhex(hex_str[count_offset:count_offset + 4]))[0]
-
-    if count == 0:
-        print("[WARN] Sensor count is zero. Skipping parsing.")
+    # 1. Skip standard metadata header (26 bytes)
+    header_skip_bytes = 26
+    header_skip_chars = header_skip_bytes * 2
+    
+    if len(hex_str) < (header_skip_chars + 8):
+        print(f"[ERROR] Insufficient data length: {len(hex_str)}")
         return []
 
-    segment_len = 28
-    data_payload = hex_str[60:60+count * segment_len]
+    # 2. Decoding QM metadata
+    submodule_id = int(hex_str[header_skip_chars : header_skip_chars+2], 16)
+    queue_id = int(hex_str[header_skip_chars+2 : header_skip_chars+4], 16)
+    
+    # Instance count (UINT16 at bytes 28-29)
+    count_hex = hex_str[header_skip_chars+4 : header_skip_chars+8]
+    count = struct.unpack('<H', bytes.fromhex(count_hex))[0]
+    
+    if count == 0:
+        return []
+
+    # 3. Data payload starts at byte 30
+    data_start_idx = header_skip_chars + 8
+    data_payload = hex_str[data_start_idx:]
+    
     segments = []
+    pos_chars = 0
+    
     for idx in range(count):
-        seg = data_payload[idx * segment_len:(idx + 1) * segment_len]
-        if len(seg) < segment_len:
-            continue
-
-        # ---- Fixed fields ----
-        operation_status = int(seg[0:2], 16)
-
-        epoch_bytes = bytes.fromhex(seg[2:10])
-        epoch_time = struct.unpack('<I', epoch_bytes)[0]
-        epoch_time_human = datetime.utcfromtimestamp(epoch_time).strftime('%Y-%m-%d %H:%M:%S')
-
-        Number_of_reaction_wheel = int(seg[10:12], 16)
-
-        # ---- Reaction wheel currents (explicit n=3 / n=4) ----
-        if Number_of_reaction_wheel == 3:
-            Reaction_wheel_current_1 = struct.unpack('<H', bytes.fromhex(seg[12:16]))[0] * 0.1
-            Reaction_wheel_current_2 = struct.unpack('<H', bytes.fromhex(seg[16:20]))[0] * 0.1
-            Reaction_wheel_current_3 = struct.unpack('<H', bytes.fromhex(seg[20:24]))[0] * 0.1
-
-            Reaction_wheel_current_4 = None  # not present
-
-        elif Number_of_reaction_wheel == 4:
-            Reaction_wheel_current_1 = struct.unpack('<H', bytes.fromhex(seg[12:16]))[0] * 0.1
-            Reaction_wheel_current_2 = struct.unpack('<H', bytes.fromhex(seg[16:20]))[0] * 0.1
-            Reaction_wheel_current_3 = struct.unpack('<H', bytes.fromhex(seg[20:24]))[0] * 0.1
-            Reaction_wheel_current_4 = struct.unpack('<H', bytes.fromhex(seg[24:28]))[0] * 0.1
-
-        else:
-            print(f"[WARN] Invalid reaction wheel count: {Number_of_reaction_wheel}")
-            continue
-
-        # ---- Store parsed segment ----
-        segments.append({
-            'Submodule_ID': submodule_id,
-            'Queue_ID': queue_id,
-            'Number of Instances': count,
-            'Operation_Status': operation_status,
-            'Epoch_Time_Human': epoch_time_human,
-            'Number_of_reaction_wheel': Number_of_reaction_wheel,
-            'Reaction_wheel_current_1': Reaction_wheel_current_1,
-            'Reaction_wheel_current_2': Reaction_wheel_current_2,
-            'Reaction_wheel_current_3': Reaction_wheel_current_3,
-            'Reaction_wheel_current_4': Reaction_wheel_current_4,
-        })
-
+        # We need at least 6 bytes (12 hex chars) to read the fixed part of the segment
+        # Offset 0: Operation Status (1B)
+        # Offset 1: Epoch Time (4B)
+        # Offset 5: n (1B)
+        if len(data_payload[pos_chars:]) < 12:
+            break
+            
+        header_hex = data_payload[pos_chars : pos_chars + 12]
+        try:
+            # Layout follows Table 22 strictly: < B (1), I (4), B (1)
+            op_status, epoch_ti, n_wheels = struct.unpack('<BI B', bytes.fromhex(header_hex))
+            
+            # Full segment length = 6 + 2*n bytes
+            seg_len_bytes = 6 + 2 * n_wheels
+            seg_len_chars = seg_len_bytes * 2
+            
+            if len(data_payload[pos_chars:]) < seg_len_chars:
+                print(f"[ERROR] Incomplete segment for instance {idx}")
+                break
+                
+            full_seg_hex = data_payload[pos_chars : pos_chars + seg_len_chars]
+            # Currents start at offset 6 (char 12)
+            currents_data = full_seg_hex[12:]
+            
+            # Construct row FOLLOWING TABLE ORDER
+            row = {
+                'Submodule_ID': submodule_id,
+                'Queue_ID': queue_id,
+                'Number of Instances': count,
+                'Operation_Status': op_status,
+                'Epoch_Time_Human': datetime.fromtimestamp(epoch_ti, timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),
+                'Number_of_reaction_wheel': n_wheels
+            }
+            
+            # Initialize 4 standard current columns to ensure DB schema stability
+            for i in range(1, 5):
+                row[f'Reaction_wheel_current_{i}'] = None
+                
+            # Fill existing wheel data
+            for i in range(n_wheels):
+                cur_hex = currents_data[i*4 : (i+1)*4]
+                if cur_hex:
+                    raw_val = struct.unpack('<H', bytes.fromhex(cur_hex))[0]
+                    # Current = RAWVAL * 0.1
+                    row[f'Reaction_wheel_current_{i+1}'] = round(raw_val * 0.1, 2)
+            
+            segments.append(row)
+            pos_chars += seg_len_chars
+            
+        except Exception as e:
+            print(f"[ERROR] Failed parsing segment {idx}: {e}")
+            break
+            
     return segments
+

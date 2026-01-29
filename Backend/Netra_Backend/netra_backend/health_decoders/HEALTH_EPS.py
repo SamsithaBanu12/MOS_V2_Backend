@@ -222,13 +222,42 @@ def _u32raw(buf: bytes, pos: int, where="u32raw") -> Tuple[bytes, int]:
     return buf[pos:pos+4], pos + 4
 
 def _fmt_ist(ts: int) -> str:
-    if IST is not None:
-        dt = datetime.fromtimestamp(ts, tz=IST)
-    else:
-        dt = datetime.fromtimestamp(ts)
-    s = dt.strftime("%B %d, %Y %I:%M:%S %p")
-    s = s.replace(" 0", " ")
-    return s
+    """
+    Format timestamp to IST string. Handles timestamps in seconds, milliseconds, or microseconds.
+    Falls back to raw value string if conversion fails.
+    """
+    # Validate and convert timestamp
+    # Unix timestamps in seconds should be reasonable (e.g., between 2000-2100)
+    # 946684800 = Jan 1, 2000
+    # 4102444800 = Jan 1, 2100
+    
+    original_ts = ts
+    
+    # If timestamp is too large, it's likely in milliseconds or microseconds
+    if ts > 4102444800:
+        # Try milliseconds (divide by 1000)
+        if ts > 4102444800000:
+            # Likely microseconds (divide by 1000000)
+            ts = ts // 1000000
+        else:
+            # Likely milliseconds (divide by 1000)
+            ts = ts // 1000
+    
+    # If still unreasonable, return raw value
+    if ts < 0 or ts > 4102444800:
+        return f"INVALID_TS({original_ts})"
+    
+    try:
+        if IST is not None:
+            dt = datetime.fromtimestamp(ts, tz=IST)
+        else:
+            dt = datetime.fromtimestamp(ts)
+        s = dt.strftime("%B %d, %Y %I:%M:%S %p")
+        s = s.replace(" 0", " ")
+        return s
+    except (OSError, ValueError, OverflowError) as e:
+        # If conversion still fails, return raw value
+        return f"INVALID_TS({original_ts})"
 
 
 # ----------------------------
@@ -270,6 +299,8 @@ def HEALTH_EPS(hex_str: str) -> List[Dict[str, Any]]:
 
         seg.update({
             "Timestamp": None,
+            "Epoch_Time": None,
+            "Epoch_Time_Human": None,
             "Power_Generated_Last_Orbit_Wh": None,
             "Power_Consumed_Last_Orbit_Wh": None,
             "Total_Power_Generated_Wh": None,
@@ -324,6 +355,21 @@ def HEALTH_EPS(hex_str: str) -> List[Dict[str, Any]]:
 
         # ---- Prefix ----
         ts, pos = _u32le(buf, pos, "Timestamp")
+
+        # Normalize timestamp (handle ms/us)
+        norm_ts = ts
+        if norm_ts > 4102444800:
+            if norm_ts > 4102444800000:
+                norm_ts //= 1000000
+            else:
+                norm_ts //= 1000
+
+        seg["Epoch_Time"] = int(norm_ts)
+        try:
+            seg["Epoch_Time_Human"] = datetime.utcfromtimestamp(norm_ts).strftime('%Y-%m-%d %H:%M:%S')
+        except Exception:
+            seg["Epoch_Time_Human"] = None
+
         seg["Timestamp"] = _fmt_ist(ts)
 
         pg_last, pos = _u32le(buf, pos, "Power Generated Last Orbit")

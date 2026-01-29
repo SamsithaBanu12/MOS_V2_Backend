@@ -77,3 +77,5 @@ def HEALTH_ADCS_RATE_SENSOR_MEASURE(hex_str):
         })
         
     return segments
+hex_string = "8c c5 75 00 a5 aa f0 a2 c2 60 69 10 00 00 00 81 00 04 6d 02 01 01 ff ff 5c 00 01 10 08 00 00 df c2 60 69 00 00 d9 ff 01 00 00 ea c2 60 69 00 00 d9 ff 01 00 00 f4 c2 60 69 00 00 d9 ff 01 00 00 01 c3 60 69 01 00 d9 ff 01 00 00 0b c3 60 69 01 00 d9 ff 01 00 00 16 c3 60 69 01 00 d9 ff 01 00 00 20 c3 60 69 01 00 d9 ff 01 00 00 2a c3 60 69 02 00 d9 ff 01 00 76 4f d9 8e 10 98 6f a6 58 d8 c6 80 7b e7 5b 3e b1 23 ae af 26 16 5b 30 ff 22 9e 33 70 81 86 79 ca ba"
+print(HEALTH_ADCS_RATE_SENSOR_MEASURE(hex_string.replace(" ", "")))

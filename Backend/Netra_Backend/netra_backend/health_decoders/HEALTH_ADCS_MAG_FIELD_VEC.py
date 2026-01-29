@@ -3,22 +3,28 @@ from datetime import datetime
 
 
 def HEALTH_ADCS_MAG_FIELD_VEC(hex_str):
-    header_skip_len = 29  # metadata header in bytes
-    tc_len=struct.unpack('<H', bytes.fromhex(hex_str[46:50]))[0]
-    tm_len=tc_len*2 -8
-    submodule_id = int(hex_str[50:52], 16)
-    queue_id = int(hex_str[52:54], 16)
-    count_offset = (header_skip_len - 2) * 2
-
+    # Standard header is 26 bytes. Payload starts at byte 26.
+    # Payload header (Submodule, Queue, NumInstance) is 4 bytes.
+    # Total skip to start of segments is 26 + 4 = 30 bytes.
+    header_skip_len = 30
+    
+    # TM_LEN is at bytes 24-25 (indices 48:52)
+    tm_len_raw = struct.unpack('<H', bytes.fromhex(hex_str[48:52]))[0]
+    # In some implementations, tm_len might need adjustment, but we'll focus on offsets first.
+    
+    submodule_id = int(hex_str[52:54], 16) # Byte 26
+    queue_id = int(hex_str[54:56], 16)     # Byte 27
+    
+    # count_offset is for NUM_INSTANCE at bytes 28-29 (indices 56:60)
+    count_offset = 56
     count = struct.unpack('<H', bytes.fromhex(hex_str[count_offset:count_offset + 4]))[0]
+    
     if count == 0:
         print("[WARN] Sensor count is zero. Skipping parsing.")
         return []
 
-    segment_len=tm_len//count
-
-    segment_len1=22
-    data_payload = hex_str[60:60+count * segment_len]
+    segment_len1 = 22 # 11 bytes per segment
+    data_payload = hex_str[60:] # Data starts at byte 30 (index 60)
 
     segments = []
     for idx in range(count):
@@ -45,3 +51,4 @@ def HEALTH_ADCS_MAG_FIELD_VEC(hex_str):
             'Mag_Field_Z':            mag_field_z
         })
     return segments
+
