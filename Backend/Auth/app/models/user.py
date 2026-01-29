@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 from uuid import UUID, uuid4
-from sqlalchemy import String, Boolean, Integer, ForeignKey, Table, Column, DateTime
+from sqlalchemy import String, Boolean, Integer, ForeignKey, Table, Column, DateTime, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -69,6 +69,25 @@ class User(Base):
     
     # Relationships
     role: Mapped[Role] = relationship("Role", back_populates="users")
+    refresh_tokens: Mapped[List["RefreshToken"]] = relationship(
+        "RefreshToken", back_populates="user", cascade="all, delete-orphan"
+    )
     
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, username={self.username})>"
+
+
+class RefreshToken(Base):
+    """Model to store and track refresh tokens."""
+
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    token: Mapped[str] = mapped_column(String(512), unique=True, nullable=False, index=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    is_revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")
