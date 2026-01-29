@@ -363,7 +363,7 @@ async def websocket_endpoint(ws: WebSocket):
 # 6️⃣  REST ENDPOINTS (visible & testable in /docs)
 # ---------------------------------------------------------
 @app.get("/packets", summary="Get recent packets")
-def get_packets(limit: int = 100) -> List[Dict]:
+def get_packets(limit: int = 2000) -> List[Dict]:
     """
     Return the most recent packets (up to 'limit').
     Use this from Swagger UI at /docs to quickly inspect data.
