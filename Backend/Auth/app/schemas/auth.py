@@ -32,3 +32,9 @@ class TokenResponse(BaseModel):
     refresh_token: str
     role: str
     permissions: List[str]
+
+
+class RoleUpdateRequest(BaseModel):
+    """Request schema for updating a user's role."""
+    user_id: str
+    new_role: str

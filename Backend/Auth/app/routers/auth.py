@@ -5,8 +5,9 @@ from sqlalchemy.orm import selectinload
 from datetime import datetime, timedelta
 from app.database import get_db
 from app.models.user import User, Role, RefreshToken
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, TokenRefreshRequest
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, TokenRefreshRequest, RoleUpdateRequest
 from app.auth.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_access_token
+from app.auth.dependencies import get_current_user
 from app.config import settings
 
 
@@ -237,3 +238,61 @@ async def logout(
         await db.commit()
         
     return {"message": "Logged out successfully"}
+
+
+@router.post("/update-role", status_code=status.HTTP_200_OK)
+async def update_user_role(
+    request: RoleUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> dict:
+    """
+    Update a user's role. Restricted to SUPER_ADMIN and ADMIN.
+    """
+    # 1. Fetch current user's role name
+    result = await db.execute(select(Role).where(Role.id == current_user.role_id))
+    current_role = result.scalar_one()
+    
+    # 2. Check if current user is authorized (SUPER_ADMIN or ADMIN)
+    if current_role.name not in ["SUPER_ADMIN", "ADMIN"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to update roles"
+        )
+    
+    # 3. Fetch the user to be updated
+    result = await db.execute(select(User).where(User.id == request.user_id))
+    user_to_update = result.scalar_one_or_none()
+    
+    if not user_to_update:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # 4. Fetch the new role
+    result = await db.execute(select(Role).where(Role.name == request.new_role))
+    new_role = result.scalar_one_or_none()
+    
+    if not new_role:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Role '{request.new_role}' does not exist"
+        )
+        
+    # 5. Security check: ADMIN cannot create a SUPER_ADMIN
+    if current_role.name == "ADMIN" and new_role.name == "SUPER_ADMIN":
+         raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrators cannot promote users to SUPER_ADMIN"
+        )
+
+    # 6. Update user role
+    user_to_update.role_id = new_role.id
+    await db.commit()
+    
+    return {
+        "message": f"Successfully updated user {user_to_update.username}'s role to {new_role.name}",
+        "user_id": str(user_to_update.id),
+        "new_role": new_role.name
+    }
