@@ -253,8 +253,8 @@ services:
     build:
       context: ./bridge-backend
     container_name: bridge-backend-service
-    ports:
-      - "8002:8002"
+#    ports:
+#      - "8002:8002"
     networks:
       - default
       - cosmos-project_default

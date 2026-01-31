@@ -1,7 +1,7 @@
 import asyncio, json, sqlite3
 from typing import List, Dict, Optional
 
-from fastapi import FastAPI, Depends, WebSocket, WebSocketDisconnect, Query, HTTPException
+from fastapi import FastAPI, Depends, WebSocket, WebSocketDisconnect, Query, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func  # 👈 needed for DB totals
@@ -26,8 +26,29 @@ LOGICAL_TOPICS = (
     "SatOS/downlink",
 )
 
+# ---------- Security (RBAC) ----------
+def verify_role(allowed_roles: List[str]):
+    async def role_checker(x_user_roles: str = Header(None, alias="X-User-Roles")):
+        if not x_user_roles:
+            raise HTTPException(status_code=401, detail="Gateway authentication required")
+        if x_user_roles not in allowed_roles:
+            raise HTTPException(status_code=403, detail=f"Permission denied: {x_user_roles} role cannot perform this action")
+        return x_user_roles
+    return role_checker
+
+CONNECTION_ROLES = ["SUPER_ADMIN", "ADMIN", "MISSION_OPERATOR"]
+
+async def gateway_auth_only(x_user_id: str = Header(None, alias="X-User-Id")):
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Internal Gateway Authentication Required")
+    return x_user_id
+
 # ---------- app & cors ----------
-app = FastAPI(title="Bridge Backend", version="2.3")
+app = FastAPI(
+    title="Bridge Backend", 
+    version="2.3",
+    dependencies=[Depends(gateway_auth_only)]
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_CORS, allow_credentials=True,
@@ -86,6 +107,7 @@ def station_or_404(station_id: str) -> Dict:
     if not st:
         raise HTTPException(status_code=404, detail=f"Unknown station '{station_id}'")
     return st
+
 
 # ---------- globals ----------
 stats = Stats()
@@ -239,13 +261,13 @@ def get_stations():
         })
     return out
 
-@app.post("/connect")
+@app.post("/connect", dependencies=[Depends(verify_role(CONNECTION_ROLES))])
 def connect(station: str = Query(...)):
     station_or_404(station)
     BRIDGES.connect(station)
     return {"ok": True}
 
-@app.post("/disconnect")
+@app.post("/disconnect", dependencies=[Depends(verify_role(CONNECTION_ROLES))])
 def disconnect(station: str = Query(...)):
     station_or_404(station)
     BRIDGES.disconnect(station)
