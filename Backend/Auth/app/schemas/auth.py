@@ -26,3 +26,17 @@ class TokenResponse(BaseModel):
     token: str
     role: str
     permissions: List[str]
+
+
+class UserResponse(BaseModel):
+    """User details response schema."""
+    
+    id: str
+    email: EmailStr
+    username: str
+    role: str
+    is_active: bool
+    created_at: str | None = None
+
+    class Config:
+        from_attributes = True

@@ -1,14 +1,43 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models.user import User, Role, Permission
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
 from app.auth.security import hash_password, verify_password, create_access_token
+from app.auth.dependencies import RoleChecker
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+@router.get("/users", response_model=List[UserResponse])
+async def get_users(
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(RoleChecker(["admin", "super_admin"]))
+) -> List[UserResponse]:
+    """
+    Get all users in the system.
+    Only accessible by users with 'admin' or 'super_admin' roles.
+    """
+    result = await db.execute(
+        select(User).options(selectinload(User.role))
+    )
+    users = result.scalars().all()
+    
+    return [
+        UserResponse(
+            id=str(u.id),
+            email=u.email,
+            username=u.username,
+            role=u.role.name,
+            is_active=u.is_active,
+            created_at=u.created_at.isoformat() if u.created_at else None
+        )
+        for u in users
+    ]
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
