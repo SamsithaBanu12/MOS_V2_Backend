@@ -1,0 +1,58 @@
+[
+    {
+        "subsystemName": "ADCS",
+        "commandName": "ADCS_129_TC_GET_ADCS_STATE_INFO",
+        "LookUpTableID": "1",
+        "Timestamp": "1769913971",
+        "Delay": 0,
+        "SrcID": "FF",
+        "DestID": "82",
+        "TCID": "8100",
+        "RadioID": "04",
+        "Offset": "00000000",
+        "Length": "05000000",
+        "Payload": "0000001f,0000007f,00000081,0000001f,000000ff"
+    },
+    {
+        "subsystemName": "ADCS",
+        "commandName": "ADCS_133_TM_GET_ADCS_MAG_FIELD_VEC",
+        "LookUpTableID": "1",
+        "Timestamp": "1769913981",
+        "Delay": 10,
+        "SrcID": "FF",
+        "DestID": "82",
+        "TCID": "8500",
+        "RadioID": "04",
+        "Offset": "06000000",
+        "Length": "06000000",
+        "Payload": "0000001f,0000007f,00000085,00000000,0000001f,000000ff"
+    },
+    {
+        "subsystemName": "ADCS",
+        "commandName": "ADCS_117_TC_GET_ADCS_SAT_VEL_ECEF",
+        "LookUpTableID": "1",
+        "Timestamp": "1769913991",
+        "Delay": 10,
+        "SrcID": "FF",
+        "DestID": "82",
+        "TCID": "7500",
+        "RadioID": "04",
+        "Offset": "0D000000",
+        "Length": "06000000",
+        "Payload": "0000001f,0000007f,00000075,00000000,0000001f,000000ff"
+    },
+    {
+        "subsystemName": "ADCS",
+        "commandName": "ADCS_134_TC_GET_ADCS_CSS_VEC",
+        "LookUpTableID": "1",
+        "Timestamp": "1769914001",
+        "Delay": 10,
+        "SrcID": "FF",
+        "DestID": "82",
+        "TCID": "8600",
+        "RadioID": "04",
+        "Offset": "14000000",
+        "Length": "06000000",
+        "Payload": "0000001f,0000007f,00000086,00000000,0000001f,000000ff"
+    }
+]
