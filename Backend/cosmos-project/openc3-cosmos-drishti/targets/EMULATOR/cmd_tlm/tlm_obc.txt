@@ -263,7 +263,7 @@ TELEMETRY <%= target_name %> OBC_505_TM_GET_AUTO_LEOPS_STATE BIG_ENDIAN "Get Aut
   APPEND_ITEM Extended_header_data 8 UINT "data"
   APPEND_ITEM CoID 16 UINT "Co ID"
   APPEND_ITEM TM_LEN 16 UINT "TM_LEN" LITTLE_ENDIAN
-  APPEND_ITEM Satellite_Body_Axis 8 UINT "Satellite Body Axis 1" LITTLE_ENDIAN
+  APPEND_ITEM Satellite_Body_Axis 8 UINT "Satellite Body Axis 1" 
         STATE Satellite_body_axis_not_updated 0
         STATE Satellite_body_position_positive_X_axis 1
         STATE Satellite_body_position_positive_Y_axis 2
@@ -271,6 +271,19 @@ TELEMETRY <%= target_name %> OBC_505_TM_GET_AUTO_LEOPS_STATE BIG_ENDIAN "Get Aut
         STATE Satellite_body_position_negative_X_axis 4
         STATE Satellite_body_position_negative_Y_axis 5
         STATE Satellite_body_position_negative_Z_axis 6
+  APPEND_ITEM LEOP_STATUS 8 UINT "LEOP_STATUS" 
+         STATE DETUMBLING_IN_PROGRESS 0
+         STATE DETUMBLING_COMPLETED 1
+         STATE SUN_POINTING_IN_PROGRESS 2
+         STATE SUN_POINTING_COMPLETED 3
+         STATE SUN_POINTING_FAILED 4
+         STATE POWER_MONITORING_PROGRESS 5
+         STATE HDRM_RELEASE_PROGRESS 6
+         STATE LEOPS_SUCCESS 7
+         STATE LEOPS_ABORT 8
+         STATE HDRM_RELEASE_FAIL 9
+         STATE HDRM_RELEASE_FAILED 11
+         STATE HINGE_RESPONSE_NOT_RECEIVED_IN_TIME_LIMIT 12
   APPEND_ITEM CRC 8 BLOCK "CRC"
   APPEND_ITEM CMAC/HMAC 256 BLOCK "CMAC/HMAC"
   APPEND_ITEM EOF 8 BLOCK "EOF"
