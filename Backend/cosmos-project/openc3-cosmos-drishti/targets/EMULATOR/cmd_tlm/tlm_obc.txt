@@ -1533,6 +1533,9 @@ TELEMETRY <%= target_name %> OBC_957_TM_SYNC_GPS_TIME BIG_ENDIAN "GNSS Time Sync
   ##################################################
   # TM Parameters (Table 85)
   ##################################################
+  APPEND_ITEM STATUS 8 UINT "STATUS"
+       STATE SUCCESS 0
+       STATE FAILURE -1
   APPEND_ITEM HOUR 8 UINT "Hour"
   APPEND_ITEM MINUTE 8 UINT "Minute"
   APPEND_ITEM MILLI_SECONDS 16 UINT "Milli Seconds"
