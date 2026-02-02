@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models.user import User, Role, Permission
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
 from app.auth.security import hash_password, verify_password, create_access_token
-from app.auth.dependencies import RoleChecker
+from app.auth.dependencies import RoleChecker, get_current_user
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -171,3 +171,23 @@ async def login(
         role=role_name,
         permissions=permissions
     )
+
+
+@router.get("/verify")
+async def verify(
+    response: Response,
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Verify token validity for Traefik ForwardAuth.
+    If valid, returns 200 OK and sets X-WebAuth-User header.
+    """
+    # Fetch user details to get the username
+    result = await db.execute(select(User).where(User.id == int(user["user_id"])))
+    db_user = result.scalar_one_or_none()
+    
+    username = db_user.username if db_user else f"user_{user['user_id']}"
+    
+    response.headers["X-WebAuth-User"] = username
+    return {"status": "ok", "user": username}

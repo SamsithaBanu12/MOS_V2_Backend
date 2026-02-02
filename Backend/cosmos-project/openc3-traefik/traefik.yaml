@@ -11,10 +11,16 @@ http:
       replacePathRegex:
         regex: "^/([^/]*)/(.*)"
         replacement: "/$2"
-    # Serve /tools/base/index.html
     gotoToolsBaseIndex:
       replacePath:
         path: "/tools/base/index.html"
+    # ForwardAuth middleware for Grafana SSO
+    grafanaAuth:
+      forwardAuth:
+        address: "http://c2-auth-service:8001/auth/verify"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "X-WebAuth-User"
     # Adds /tools/base to the beginning of the given url
     # ie. /index.html becomes /tools/base/index.html
     addToolsBase:
@@ -37,9 +43,15 @@ http:
     # Note: Priorities control router check order with highest priority evaluated first
     # Route to the openc3 cmd/tlm api websockets
     api-cable-router:
-      rule: PathPrefix(`/openc3-api/cable`)
       service: service-api-cable
       priority: 10
+    # Route for Grafana
+    grafana-router:
+      rule: PathPrefix(`/grafana`)
+      middlewares:
+        - "grafanaAuth"
+      service: service-grafana
+      priority: 15
     # Route to the openc3 script api websockets
     script-cable-router:
       rule: PathPrefix(`/script-api/cable`)
@@ -136,8 +148,13 @@ http:
     service-minio:
       loadBalancer:
         passHostHeader: false
-        servers:
           - url: "http://openc3-minio:9000"
+    # The Grafana service
+    service-grafana:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://grafana:3000"
 # Declare the routes are currently coming from this file, not dynamically
 providers:
   file:
