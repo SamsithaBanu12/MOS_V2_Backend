@@ -38,3 +38,12 @@ class RoleUpdateRequest(BaseModel):
     """Request schema for updating a user's role."""
     user_id: str
     new_role: str
+
+class UserResponse(BaseModel):
+    """Schema for returning user information."""
+    id: str
+    email: EmailStr
+    username: str
+    role: str
+    is_active: bool
+    created_at: str | None = None

@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -5,13 +6,52 @@ from sqlalchemy.orm import selectinload
 from datetime import datetime, timedelta
 from app.database import get_db
 from app.models.user import User, Role, RefreshToken
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, TokenRefreshRequest, RoleUpdateRequest
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, TokenRefreshRequest, RoleUpdateRequest, UserResponse
 from app.auth.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_access_token
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, RoleChecker
 from app.config import settings
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+@router.get("/users", response_model=List[UserResponse])
+async def get_users(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(RoleChecker(["ADMIN", "SUPER_ADMIN"]))
+) -> List[UserResponse]:
+    """
+    List users with role-based visibility:
+    - SUPER_ADMIN: Can see all users.
+    - ADMIN: Can see all users except SUPER_ADMIN.
+    """
+    # Force load current_user's role if not already present
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(select(User).where(User.id == current_user.id).options(selectinload(User.role)))
+    current_user = result.scalar_one()
+
+    # Build query
+    query = select(User).options(selectinload(User.role))
+
+    if current_user.role.name == "ADMIN":
+        # Admins cannot see Super Admins
+        query = query.join(Role).where(Role.name != "SUPER_ADMIN")
+    
+    # Execute query
+    result = await db.execute(query)
+    users = result.scalars().all()
+    
+    return [
+        UserResponse(
+            id=str(u.id),
+            email=u.email,
+            username=u.username,
+            role=u.role.name,
+            is_active=u.is_active,
+            created_at=u.created_at.isoformat() if u.created_at else None
+        )
+        for u in users
+    ]
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)

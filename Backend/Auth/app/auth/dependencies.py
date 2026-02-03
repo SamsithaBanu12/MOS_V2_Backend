@@ -1,4 +1,4 @@
-from typing import List, Callable
+from typing import List, Callable,Dict,Any
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -50,8 +50,12 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Fetch user from database
-    result = await db.execute(select(User).where(User.id == user_id))
+    # Fetch user from database with role eagerly loaded
+    result = await db.execute(
+        select(User)
+        .where(User.id == user_id)
+        .options(selectinload(User.role))
+    )
     user = result.scalar_one_or_none()
     
     if user is None:
@@ -128,3 +132,23 @@ def require_permission(permission_name: str) -> Callable:
         return current_user
     
     return permission_checker
+
+class RoleChecker:
+    def __init__(self, allowed_roles: List[str]):
+        self.allowed_roles = [role.lower() for role in allowed_roles]
+
+    async def __call__(
+        self, 
+        user: User = Depends(get_current_user)
+    ) -> User:
+        """
+        Check role and return user if authorized. 
+        Role is pre-loaded by get_current_user using selectinload.
+        """
+        user_role = user.role.name.lower()
+        if user_role not in self.allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Operation not permitted for role: {user.role.name}. Required: {self.allowed_roles}"
+            )
+        return user
