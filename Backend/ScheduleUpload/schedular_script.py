@@ -53,7 +53,7 @@ class _Tee:
 
 # ---------------- Config ----------------
 MAX_RECORDS_PER_565 = 40
-MAX_EVENTS_PER_SEGMENT = 20  # set 60 if needed
+MAX_EVENTS_PER_SEGMENT = 10  # set 60 if needed
 
 OPEN_C3_URL = os.getenv("OPEN_C3_URL", "http://host.docker.internal:2900/openc3-api/api")
 OPEN_C3_HEADERS = {

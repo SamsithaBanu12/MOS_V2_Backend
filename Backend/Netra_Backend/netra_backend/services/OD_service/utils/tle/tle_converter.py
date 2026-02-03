@@ -6,10 +6,9 @@ And fetches TLE data directly from the database.
 
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional
-from sgp4.api import Satrec, jday
-import numpy as np
+from skyfield.api import load, EarthSatellite, wgs84
 
 # Add parent directory to path to import od_data_handler
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -18,7 +17,7 @@ from od_data_handler import fetch_latest_tle
 
 def tle_to_wgs84(line1: str, line2: str, time_points: int = 100, duration_hours: float = 24.0) -> List[Dict[str, Any]]:
     """
-    Convert TLE to WGS84 coordinates over a time period.
+    Convert TLE to WGS84 coordinates over a time period, accounting for Earth's rotation.
     
     Args:
         line1: TLE line 1
@@ -27,48 +26,39 @@ def tle_to_wgs84(line1: str, line2: str, time_points: int = 100, duration_hours:
         duration_hours: Duration in hours to propagate
         
     Returns:
-        List of dictionaries with timestamp, lat, lon, alt
+        List of dictionaries with timestamp, lat, lon, alt and velocity
     """
     try:
-        # Create satellite object from TLE
-        satellite = Satrec.twoline2rv(line1, line2)
+        # Initialize timescale (use builtin to avoid downloading leap second files from the internet)
+        ts = load.timescale(builtin=True)
         
-        # Generate time points
-        start_time = datetime.utcnow()
+        # Create satellite object from TLE
+        satellite = EarthSatellite(line1, line2, "Satellite", ts)
+        
+        # Generate time points starting from current UTC time
+        start_time = datetime.now(timezone.utc)
         positions = []
         
         for i in range(time_points):
             # Calculate time for this point
             dt = start_time + timedelta(hours=(duration_hours * i / time_points))
+            t = ts.from_datetime(dt)
             
-            # Convert to Julian date
-            jd, fr = jday(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+            # Propagate satellite position (TEME frame)
+            geocentric = satellite.at(t)
             
-            # Propagate satellite position
-            e, r, v = satellite.sgp4(jd, fr)
+            # Convert to sub-satellite point (Latitude, Longitude, Altitude)
+            # This transformation accounts for Earth's rotation (ECEF/WGS84)
+            subpoint = wgs84.subpoint(geocentric)
             
-            if e != 0:  # Error in propagation
-                continue
-            
-            # Convert TEME coordinates (r) to WGS84
-            # r is in km, need to convert to lat/lon/alt
-            x, y, z = r  # Position in km
-            
-            # Calculate latitude, longitude, altitude
-            # Altitude (distance from Earth center minus Earth radius)
-            alt_km = np.sqrt(x**2 + y**2 + z**2) - 6371.0  # Earth radius ~6371 km
-            
-            # Latitude (in degrees)
-            lat = np.degrees(np.arcsin(z / np.sqrt(x**2 + y**2 + z**2)))
-            
-            # Longitude (in degrees)
-            lon = np.degrees(np.arctan2(y, x))
+            # Get velocity in km/s (TEME frame)
+            v = geocentric.velocity.km_per_s
             
             positions.append({
-                "timestamp": dt.isoformat() + "Z",
-                "latitude": float(lat),
-                "longitude": float(lon),
-                "altitude_km": float(alt_km),
+                "timestamp": dt.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                "latitude": float(subpoint.latitude.degrees),
+                "longitude": float(subpoint.longitude.degrees),
+                "altitude_km": float(subpoint.elevation.km),
                 "velocity_km_s": {
                     "x": float(v[0]),
                     "y": float(v[1]),

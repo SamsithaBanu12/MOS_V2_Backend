@@ -34,6 +34,34 @@ class TokenResponse(BaseModel):
     permissions: List[str]
 
 
+class UserResponse(BaseModel):
+    """User details response schema."""
+    
+    id: str
+    email: EmailStr
+    username: str
+    role: str
+    is_active: bool
+    created_at: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class UserResponse(BaseModel):
+    """User details response schema."""
+    
+    id: str
+    email: EmailStr
+    username: str
+    role: str
+    is_active: bool
+    created_at: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class RoleUpdateRequest(BaseModel):
     """Request schema for updating a user's role."""
     user_id: str

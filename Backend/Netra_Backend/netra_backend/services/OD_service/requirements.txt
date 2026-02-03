@@ -19,3 +19,4 @@ pydantic==2.5.3  # Data validation (comes with FastAPI but pinning version)
 # TLE to WGS84 conversion
 sgp4==2.23  # Satellite orbit propagation
 numpy==1.26.4 # Numerical operations
+skyfield==1.49 # Professional grade astronomy and satellite tools
