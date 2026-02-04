@@ -5,7 +5,8 @@ SERVICE_ROUTES = {
     "/api/fileupload": "http://file-upload:8080",
     "/api/schedules": "http://schedule-upload:8008/api/schedules",
     "/api/runs": "http://schedule-upload:8008/api/runs",
-    "/api/bridge": "http://bridge-backend:8002"
+    "/api/bridge": "http://bridge-backend:8002",
+    "/api/openc3-api": "http://localhost:2900/openc3-api"
 }
 
 def resolve_service(path:str) -> tuple[str, str]:
