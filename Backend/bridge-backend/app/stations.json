@@ -16,8 +16,8 @@
   {
     "id": "gs-b",
     "name": "Drishti Flatsat",
-    "broker_b_host": "bore.pub",
-    "broker_b_port": 56670,
+    "broker_b_host": "192.168.0.145",
+    "broker_b_port": 50000,
     "broker_b_username": "gsitedev",
     "broker_b_password": "gsitepass",
     "topic_uplink": "/EXO/uplink",

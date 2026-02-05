@@ -342,18 +342,18 @@ TELEMETRY <%= target_name %> ADCS_142_TM_GET_ADCS_RW_MAGMTR BIG_ENDIAN "Raw Magn
         STATE Magnetometer_2 2
         STATE Magnetometer_3 3
         STATE Magnetometer_4 4
-  APPEND_ITEM RW1_Raw_Magnetometer_X_Measurement 16 UINT "Raw Raw Magnetometer X Measurement" LITTLE_ENDIAN
-  APPEND_ITEM RW1_Raw_Magnetometer_Y_Measurement 16 UINT "Raw Raw Magnetometer Y Measurement" LITTLE_ENDIAN
-  APPEND_ITEM RW1_Raw_Magnetometer_Z_Measurement 16 UINT "Raw Raw Magnetometer Z Measurement" LITTLE_ENDIAN
-  APPEND_ITEM RW2_Raw_Magnetometer_X_Measurement 16 UINT "Raw Raw Magnetometer X Measurement" LITTLE_ENDIAN
-  APPEND_ITEM RW2_Raw_Magnetometer_Y_Measurement 16 UINT "Raw Raw Magnetometer Y Measurement" LITTLE_ENDIAN
-  APPEND_ITEM RW2_Raw_Magnetometer_Z_Measurement 16 UINT "Raw Raw Magnetometer Z Measurement" LITTLE_ENDIAN
-  APPEND_ITEM RW3_Raw_Magnetometer_X_Measurement 16 UINT "Raw Raw Magnetometer X Measurement" LITTLE_ENDIAN
-  APPEND_ITEM RW3_Raw_Magnetometer_Y_Measurement 16 UINT "Raw Raw Magnetometer Y Measurement" LITTLE_ENDIAN
-  APPEND_ITEM RW3_Raw_Magnetometer_Z_Measurement 16 UINT "Raw Raw Magnetometer Z Measurement" LITTLE_ENDIAN
-  APPEND_ITEM RW4_Raw_Magnetometer_X_Measurement 16 UINT "Raw Raw Magnetometer X Measurement" LITTLE_ENDIAN
-  APPEND_ITEM RW4_Raw_Magnetometer_Y_Measurement 16 UINT "Raw Raw Magnetometer Y Measurement" LITTLE_ENDIAN
-  APPEND_ITEM RW4_Raw_Magnetometer_Z_Measurement 16 UINT "Raw Raw Magnetometer Z Measurement" LITTLE_ENDIAN
+  APPEND_ITEM RW1_Raw_Magnetometer_X_Measurement 16 INT "Raw Raw Magnetometer X Measurement" LITTLE_ENDIAN
+  APPEND_ITEM RW1_Raw_Magnetometer_Y_Measurement 16 INT "Raw Raw Magnetometer Y Measurement" LITTLE_ENDIAN
+  APPEND_ITEM RW1_Raw_Magnetometer_Z_Measurement 16 INT "Raw Raw Magnetometer Z Measurement" LITTLE_ENDIAN
+  APPEND_ITEM RW2_Raw_Magnetometer_X_Measurement 16 INT "Raw Raw Magnetometer X Measurement" LITTLE_ENDIAN
+  APPEND_ITEM RW2_Raw_Magnetometer_Y_Measurement 16 INT "Raw Raw Magnetometer Y Measurement" LITTLE_ENDIAN
+  APPEND_ITEM RW2_Raw_Magnetometer_Z_Measurement 16 INT "Raw Raw Magnetometer Z Measurement" LITTLE_ENDIAN
+  APPEND_ITEM RW3_Raw_Magnetometer_X_Measurement 16 INT "Raw Raw Magnetometer X Measurement" LITTLE_ENDIAN
+  APPEND_ITEM RW3_Raw_Magnetometer_Y_Measurement 16 INT "Raw Raw Magnetometer Y Measurement" LITTLE_ENDIAN
+  APPEND_ITEM RW3_Raw_Magnetometer_Z_Measurement 16 INT "Raw Raw Magnetometer Z Measurement" LITTLE_ENDIAN
+  APPEND_ITEM RW4_Raw_Magnetometer_X_Measurement 16 INT "Raw Raw Magnetometer X Measurement" LITTLE_ENDIAN
+  APPEND_ITEM RW4_Raw_Magnetometer_Y_Measurement 16 INT "Raw Raw Magnetometer Y Measurement" LITTLE_ENDIAN
+  APPEND_ITEM RW4_Raw_Magnetometer_Z_Measurement 16 INT "Raw Raw Magnetometer Z Measurement" LITTLE_ENDIAN
   APPEND_ITEM EOF1  8 BLOCK "EOF1" BIG_ENDIAN
   APPEND_ITEM EOF2 8 BLOCK "EOF2" BIG_ENDIAN  
   APPEND_ITEM CRC 8 BLOCK "CRC"
