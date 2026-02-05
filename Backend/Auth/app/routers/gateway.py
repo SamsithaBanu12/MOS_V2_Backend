@@ -8,7 +8,7 @@ SERVICE_ROUTES = {
     "/api/schedules": "http://schedule-upload:8008/api/schedules",
     "/api/runs": "http://schedule-upload:8008/api/runs",
     "/api/bridge": "http://bridge-backend:8002",
-    "/openc3-api": "http://openc3-traefik:2900/openc3-api"
+    "/api/openc3-api/api": "http://openc3-cosmos-cmd-tlm-api:2901/openc3-api/api"
 }
 
 @router.api_route(
