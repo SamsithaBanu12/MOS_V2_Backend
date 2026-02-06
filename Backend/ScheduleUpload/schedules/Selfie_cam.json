@@ -1,0 +1,30 @@
+[
+    {
+        "subsystemName": "EPS",
+        "commandName": "EPS_211_TC_SET_DEVICE_STS",
+        "LookUpTableID": "0",
+        "Timestamp": "1769482930",
+        "Delay": 5,
+        "SrcID": "FF",
+        "DestID": "83",
+        "TCID": "D300",
+        "RadioID": "04",
+        "Offset": "38000000",
+        "Length": "02000000",
+        "Payload": "00000003,00000001"
+    },
+    {
+        "subsystemName": "OBC",
+        "commandName": "OBC_545_TC_PLD_VM_PWR_ON",
+        "LookUpTableID": "0",
+        "Timestamp": "1769483050",
+        "Delay": 120,
+        "SrcID": "FF",
+        "DestID": "81",
+        "TCID": "2102",
+        "RadioID": "04",
+        "Offset": "3c000000",
+        "Length": "02000000",
+        "Payload": "0000008a,00000000"
+    }
+]
