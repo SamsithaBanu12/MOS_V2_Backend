@@ -49,3 +49,16 @@ services:
       SMTP_PASS: c0777fe5087ddf
       EMAIL_FROM: alerts@netra.local
       EMAIL_TO: operator@netra.local
+  alert_api:
+    build: ./alert_api
+    container_name: netra_alert_api
+    ports:
+      - "8003:8000"
+    restart: unless-stopped
+    environment:
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_NAME: centraDB
+      DB_USER: root
+      DB_PASSWORD: root
+      DATABASE_URL: postgresql+asyncpg://root:root@host.docker.internal:5432/centraDB

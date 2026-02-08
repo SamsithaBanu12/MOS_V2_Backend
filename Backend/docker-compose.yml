@@ -387,6 +387,23 @@ services:
     networks:
       - default
       - cosmos-project_default
+  alert-api:
+    build:
+      context: ./Netra_Backend/netra_backend/services/Alert_services/alert_api
+    container_name: netra-alert-api
+    ports:
+      - "8003:8000"
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://root:root@db:5432/centraDB
+      - PYTHONUNBUFFERED=1
+    networks:
+      - default
+      - cosmos-project_default
+
 
 volumes:
   db_data:
