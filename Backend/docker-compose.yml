@@ -279,6 +279,33 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Leafspace Backend
+  # ---------------------------------------------------------------------------
+  leafspace-backend:
+    build:
+      context: ./Leafspace
+    container_name: leafspace-backend-service
+    ports:
+      - "8020:8020"
+    networks:
+      - default
+      - cosmos-project_default
+    env_file:
+      - ./Leafspace/.env
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8020/docs" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     # ---------------------------------------------------------------------------
     # Auth Service
     # ---------------------------------------------------------------------------
