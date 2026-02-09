@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Body
+from fastapi.middleware.cors import CORSMiddleware
 
 from leafspace_client import LeafspaceClient
 
@@ -17,6 +18,14 @@ PASSWORD = os.getenv("LEAFSPACE_PASSWORD", "")
 POLL_SECONDS = 60 * 60  # 1 hour
 
 app = FastAPI(title="Leafspace Backend (Sandbox/Prod via .env)")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 client: Optional[LeafspaceClient] = None
 
