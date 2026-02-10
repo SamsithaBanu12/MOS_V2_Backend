@@ -253,8 +253,8 @@ services:
     build:
       context: ./bridge-backend
     container_name: bridge-backend-service
-    ports:
-      - "8002:8002"
+#    ports:
+#      - "8002:8002"
     networks:
       - default
       - cosmos-project_default
@@ -279,6 +279,30 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+  # ---------------------------------------------------------------------------
+  # Auth Service
+  # ---------------------------------------------------------------------------
+  auth-service:
+    build:
+      context: ./Auth
+    container_name: c2-auth-service
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://root:root@db:5432/centraDB
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - default
+      - cosmos-project_default
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # ---------------------------------------------------------------------------
   # Leafspace Backend
@@ -306,6 +330,102 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Alert Services
+  # ---------------------------------------------------------------------------
+  alert-builder:
+    build:
+      context: ./Netra_Backend/netra_backend/services/Alert_services/alert_builder
+      dockerfile: dockerfile
+    container_name: netra-alert-builder
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: Netra
+      RABBITMQ_PASS: netra@123
+    volumes:
+      - ./Netra_Backend/netra_backend/services/Alert_services/config:/app/config
+    networks:
+      - default
+      - cosmos-project_default
+
+  alert-worker:
+    build:
+      context: ./Netra_Backend/netra_backend/services/Alert_services/alert_worker
+      dockerfile: dockerfile
+    container_name: netra-alert-worker
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: Netra
+      RABBITMQ_PASS: netra@123
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: centraDB
+      DB_USER: root
+      DB_PASSWORD: root
+    networks:
+      - default
+      - cosmos-project_default
+
+  notifier:
+    build:
+      context: ./Netra_Backend/netra_backend/services/Alert_services/notifier
+      dockerfile: dockerfile
+    container_name: netra-notifier
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: Netra
+      RABBITMQ_PASS: netra@123
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: centraDB
+      DB_USER: root
+      DB_PASSWORD: root
+      SMTP_HOST: sandbox.smtp.mailtrap.io
+      SMTP_PORT: 2525
+      SMTP_USER: d0fa56994d1314
+      SMTP_PASS: c0777fe5087ddf
+      EMAIL_FROM: alerts@netra.local
+      EMAIL_TO: operator@netra.local
+    networks:
+      - default
+      - cosmos-project_default
+  alert-api:
+    build:
+      context: ./Netra_Backend/netra_backend/services/Alert_services/alert_api
+    container_name: netra-alert-api
+    ports:
+      - "8003:8000"
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://root:root@db:5432/centraDB
+      - PYTHONUNBUFFERED=1
+    networks:
+      - default
+      - cosmos-project_default
+
     # ---------------------------------------------------------------------------
     # Auth Service
     # ---------------------------------------------------------------------------

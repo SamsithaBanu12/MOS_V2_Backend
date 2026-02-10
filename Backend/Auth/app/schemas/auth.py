@@ -18,11 +18,32 @@ class RegisterRequest(BaseModel):
     role: str = Field(..., min_length=1, max_length=50)
 
 
+class TokenRefreshRequest(BaseModel):
+    """Request schema for refreshing a token."""
+    refresh_token: str
+
+
 class TokenResponse(BaseModel):
-    """Token response schema after successful login."""
+    """Token response schema after successful login or refresh."""
     
     username: str
     email: str
-    token: str
+    access_token: str
+    refresh_token: str
     role: str
     permissions: List[str]
+
+
+class RoleUpdateRequest(BaseModel):
+    """Request schema for updating a user's role."""
+    user_id: str
+    new_role: str
+
+class UserResponse(BaseModel):
+    """Schema for returning user information."""
+    id: str
+    email: EmailStr
+    username: str
+    role: str
+    is_active: bool
+    created_at: str | None = None

@@ -24,7 +24,7 @@ async def proxy_request(request: Request, user: dict) -> Response:
         client = httpx.AsyncClient(timeout=None) # No timeout for streaming
         
         # We must get the response headers and status code FIRST.
-        req_headers = build_forward_headers(request.headers, user)
+        req_headers = build_forward_headers(request.headers, user, prefix)
         
         req = client.build_request(
             method=request.method,
