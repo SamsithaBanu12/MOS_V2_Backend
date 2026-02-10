@@ -1,0 +1,122 @@
+{
+  "config_name": "TM_ALERT_CONFIG",
+  "version": "1.0",
+  "submodules": {
+    "1": "ADCS_MAIN_CONTROL",
+    "2": "EPS_POWER_MANAGEMENT",
+    "3": "OBC_CORE",
+    "4": "COMMUNICATION_LINK"
+  },
+  "thresholds": {
+    "red_percent" : 100,
+    "amber_percent": 90,
+    "yellow_percent": 80
+  },
+  "packets": [
+    {
+      "packet_name": "HEALTH_ADCS_CSS_VECTOR",
+      "queue_id": 7,
+      "metrics": {
+        "Sun_Vector_X": { "min": -1, "max": 1 },
+        "Sun_Vector_Y": { "min": -1, "max": 1 },
+        "Sun_Vector_Z": { "min": -1, "max": 1 }
+      }
+    },
+    {
+      "packet_name": "HEALTH_ADCS_MAG_FIELD_VEC",
+      "queue_id": 13,
+      "metrics": {
+        "Mag_Field_X": { "min": -60, "max": 60 },
+        "Mag_Field_Y": { "min": -60, "max": 60 },
+        "Mag_Field_Z": { "min": -60, "max": 60 }
+      }
+    },
+    {
+      "packet_name": "HEALTH_ADCS_NADIR_VEC",
+      "queue_id": 11,
+      "metrics": {
+        "NADIR_Vector_X": { "min": -1, "max": 1 },
+        "NADIR_Vector_Y": { "min": -1, "max": 1 },
+        "NADIR_Vector_Z": { "min": -1, "max": 1 }
+      }
+    },
+    {
+      "packet_name": "HEALTH_ADCS_RATE_SENSOR_MEASURE",
+      "queue_id": 16,
+      "metrics": {
+        "Measured_rate_X": { "min": -180, "max": 180 },
+        "Measured_rate_Y": { "min": -180, "max": 180 },
+        "Measured_rate_Z": { "min": -180, "max": 180 }
+      }
+    },
+    {
+      "packet_name": "HEALTH_ADCS_CMD_ATTITUDE_ANGLE",
+      "queue_id": 22,
+      "metrics": {
+        "Commanded_Roll": { "min": null, "max": null },
+        "Commanded_Pitch": { "min": null, "max": null },
+        "Commanded_Yaw": { "min": null, "max": null },
+        "Quaternion_4_Check": { "min": -1, "max": 1 }
+      }
+    },
+    {
+      "packet_name": "HEALTH_ADCS_CURRENT_STATE",
+      "queue_id": 6,
+      "metrics": {
+        "attitude_estimation_mode": { "min": 1, "max": 5 },
+        "control_mode": { "min": 4, "max": 8 }
+      }
+    },
+    {
+      "packet_name": "HEALTH_ADCS_EST_GYRO_BIAS",
+      "queue_id": 28,
+      "metrics": {
+        "Est_Gyro_Bias_X": { "min": -180, "max": 180 },
+        "Est_Gyro_Bias_Y": { "min": -180, "max": 180 },
+        "Est_Gyro_Bias_Z": { "min": -180, "max": 180 }
+      }
+    },
+    {
+      "packet_name": "HEALTH_ADCS_EST_RATES",
+      "queue_id": 18,
+      "metrics": {
+        "Est_Rate_X": { "min": -180, "max": 180 },
+        "Est_Rate_Y": { "min": -180, "max": 180 },
+        "Est_Rate_Z": { "min": -180, "max": 180 }
+      }
+    },
+    {
+      "packet_name": "HEALTH_ADCS_IGRF_MOD_VEC",
+      "queue_id": 14,
+      "metrics": {
+        "IGRF_Mod_Vector_X": { "min": -60, "max": 60 },
+        "IGRF_Mod_Vector_Y": { "min": -60, "max": 60 },
+        "IGRF_Mod_Vector_Z": { "min": -60, "max": 60 }
+      }
+    },
+    {
+      "packet_name": "HEALTH_ADCS_MEAS_RW_SPEED",
+      "queue_id": 23,
+      "thresholds": {
+        "red_percent": 70,
+        "amber_percent": 60,
+        "yellow_percent": 50
+      },
+      "metrics": {
+        "Measured_Wheel_Speed_1": { "min": -8000, "max": 8000 },
+        "Measured_Wheel_Speed_2": { "min": -8000, "max": 8000 },
+        "Measured_Wheel_Speed_3": { "min": -8000, "max": 8000 },
+        "Measured_Wheel_Speed_4": { "min": -8000, "max": 8000 }
+      }
+    },
+    {
+      "packet_name": "ADCS_HM_SAT_POS_ECEF_FRAME",
+      "queue_id": 30,
+      "metrics": {
+        "Sat_Pos_ECEF_X": { "min": -8000, "max": 8000 },
+        "Sat_Pos_ECEF_Y": { "min": -8000, "max": 8000 },
+        "Sat_Pos_ECEF_Z": { "min": -8000, "max": 8000 }
+      }
+    }
+  ]
+}

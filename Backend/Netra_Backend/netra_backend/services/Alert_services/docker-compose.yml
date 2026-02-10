@@ -1,0 +1,64 @@
+version: "3.9"
+
+services:
+
+  alert_builder:
+    build: ./alert_builder
+    container_name: netra_alert_builder
+    restart: unless-stopped
+    environment:
+      RABBITMQ_HOST: host.docker.internal
+      RABBITMQ_PORT: 5673
+      RABBITMQ_USER: Netra
+      RABBITMQ_PASS: netra@123
+    volumes:
+      - ./config:/app/config
+
+  alert_worker:
+    build: ./alert_worker
+    container_name: netra_alert_worker
+    restart: unless-stopped
+    environment:
+      RABBITMQ_HOST: host.docker.internal
+      RABBITMQ_PORT: 5673
+      RABBITMQ_USER: Netra
+      RABBITMQ_PASS: netra@123
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_NAME: centraDB
+      DB_USER: root
+      DB_PASSWORD: root
+
+  notifier:
+    build: ./notifier
+    container_name: netra_notifier
+    restart: unless-stopped
+    environment:
+      RABBITMQ_HOST: host.docker.internal
+      RABBITMQ_PORT: 5673
+      RABBITMQ_USER: Netra
+      RABBITMQ_PASS: netra@123
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_NAME: centraDB
+      DB_USER: root
+      DB_PASSWORD: root
+      SMTP_HOST: sandbox.smtp.mailtrap.io
+      SMTP_PORT: 2525
+      SMTP_USER: d0fa56994d1314
+      SMTP_PASS: c0777fe5087ddf
+      EMAIL_FROM: alerts@netra.local
+      EMAIL_TO: operator@netra.local
+  alert_api:
+    build: ./alert_api
+    container_name: netra_alert_api
+    ports:
+      - "8003:8000"
+    restart: unless-stopped
+    environment:
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_NAME: centraDB
+      DB_USER: root
+      DB_PASSWORD: root
+      DATABASE_URL: postgresql+asyncpg://root:root@host.docker.internal:5432/centraDB

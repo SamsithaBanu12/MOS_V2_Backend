@@ -399,7 +399,7 @@ def get_run_status(run_id: str):
         raise HTTPException(status_code=404, detail="Run not found")
 
     now = now_epoch()
-    tol_sec = 10.0
+    tol_sec = 20.0
 
     for cmd in run["commands"]:
         status = cmd.get("status", "SCHEDULED")
