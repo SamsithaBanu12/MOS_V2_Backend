@@ -11,7 +11,7 @@
 #include "file_transfer.h"
 
 #define MAX_PAYLOAD_LEN 1400
-#define APP_ID 134
+#define APP_ID 137
 #define PORT 8129
 #define SERVER_IP "127.0.0.1"
 
@@ -129,7 +129,7 @@ uint8_t ft_payload_transmitt_cblk(uint16_t tc_tm_id, uint16_t src_dst_id, uint8_
     buffer[14] = 0x00;
     buffer[15] = 0x03;
     buffer[16] = 0x01;
-    buffer[17] = 0x86;   // src/dst id (APP_ID)
+    buffer[17] = 0x89;   // src/dst id (APP_ID)
 
     // buffer[18] removed earlier
     buffer[18] = 0x04;
@@ -200,7 +200,7 @@ void *receive_thread(void *arg) {
                (unsigned)tc_tm_id, (unsigned)src_dst_id, (unsigned)payload_len);
         hexdump_compact("RX Payload (first 128B hex)", payload, payload_len, 128);
 
-        if ((payload_len >= 1 && payload_len <= 1350) && (src_dst_id == APP_ID)) {
+        if ((payload_len >= 1 && payload_len <= 1350)) {
             printf("[FTM RX] Forwarding to library: ft_payload_parser(...)\n");
             ft_payload_parser(tc_tm_id, src_dst_id, payload, payload_len);
         } else {

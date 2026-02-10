@@ -1,8 +1,0 @@
-COMMAND <%= target_name %> 600_Payload_TC_Sequence BIG_ENDIAN "On Virtual Machine"
-  <%= render "_cmd_headers.txt", locals: {tcid: 0xD802, daid: 0x8680, tclen: 88 } %>
-  APPEND_PARAMETER APP_ID 16 UINT 120 150 136  "APP ID" LITTLE_ENDIAN
-  APPEND_PARAMETER Sequence_ID 128 STRING 'Sar' "Sequence_ID"
-  APPEND_PARAMETER Sequence_Params 512 STRING 'Strip' "Sequence Parameters"
-  APPEND_PARAMETER Scheduled_Delay_minutes 16 UINT 0 2000 0 "Scheduled Delay in Minutes" LITTLE_ENDIAN
-  APPEND_PARAMETER Scheduled_Delay_seconds 16 UINT 0 2000 0 "Scheduled Delay in Seconds" LITTLE_ENDIAN
-  APPEND_PARAMETER Scheduled_Delay_millisecond 16 UINT 0 2000 0 "Scheduled Delay in Milli Seconds" LITTLE_ENDIAN

@@ -1,7 +1,0 @@
-SCREEN 1500 AUTO 1.0
-TITLE "Firing Operating Point"
-VERTICALBOX "Information"
-  LABELVALUE EMULATOR 117_TTY_Debug Response
-        SUBSETTING 1 WIDTH 1000
-
-END

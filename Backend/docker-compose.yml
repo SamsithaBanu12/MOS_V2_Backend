@@ -303,6 +303,28 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # ---------------------------------------------------------------------------
+  # Leafspace Backend
+  # ---------------------------------------------------------------------------
+  leafspace-backend:
+    build:
+      context: ./Leafspace
+    container_name: leafspace-backend-service
+    ports:
+      - "8020:8020"
+    networks:
+      - default
+      - cosmos-project_default
+    env_file:
+      - ./Leafspace/.env
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8020/docs" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     logging:
       driver: "json-file"
       options:
@@ -404,6 +426,35 @@ services:
       - default
       - cosmos-project_default
 
+    # ---------------------------------------------------------------------------
+    # Auth Service
+    # ---------------------------------------------------------------------------
+    # auth-service:
+    #   build:
+    #     context: ./Auth
+    #   container_name: c2-auth-service
+    #   ports:
+    #     - "8001:8001"
+    #   environment:
+    #     - DATABASE_URL=postgresql+asyncpg://root:root@db:5432/centraDB
+    #     - PYTHONUNBUFFERED=1
+    #   depends_on:
+    #     db:
+    #       condition: service_healthy
+    #   networks:
+    #     - default
+    #     - cosmos-project_default
+    #   restart: unless-stopped
+    #   healthcheck:
+    #     test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+    #     interval: 30s
+    #     timeout: 10s
+    #     retries: 3
+    #   logging:
+    #     driver: "json-file"
+    #     options:
+    #       max-size: "10m"
+    #       max-file: "3"
 
 volumes:
   db_data:
