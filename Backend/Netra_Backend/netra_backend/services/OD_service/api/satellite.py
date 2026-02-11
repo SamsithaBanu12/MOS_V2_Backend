@@ -19,7 +19,8 @@ router = APIRouter(prefix="/satellite", tags=["Satellite Tracking"])
 async def get_satellite_track_data(
     tle_file: Optional[str] = Query(None, description="Path to specific TLE file (optional, uses latest if not provided)"),
     time_points: int = Query(100, ge=10, le=1000, description="Number of position points to generate"),
-    duration_hours: float = Query(24.0, ge=0.1, le=168.0, description="Propagation duration in hours (max 1 week)")
+    duration_hours: float = Query(24.0, ge=0.1, le=168.0, description="Propagation duration in hours (max 1 week)"),
+    past_hours: float = Query(1.0, ge=0.0, le=168.0, description="Duration in hours to propagate into the past")
 ) -> Dict[str, Any]:
     """
     Get satellite tracking data from TLE file converted to WGS84 coordinates.
@@ -27,7 +28,8 @@ async def get_satellite_track_data(
     Parameters:
     - tle_file: Optional path to TLE file (defaults to latest TLE)
     - time_points: Number of position points (10-1000, default 100)
-    - duration_hours: Duration in hours (1-168, default 24)
+    - duration_hours: Duration in hours (0.1-168, default 24)
+    - past_hours: Duration in hours (0-168, default 1.0)
     
     Returns:
     - Satellite positions in WGS84 (lat, lon, alt)
@@ -38,7 +40,8 @@ async def get_satellite_track_data(
         result = get_satellite_track(
             tle_path=tle_file,
             time_points=time_points,
-            duration_hours=duration_hours
+            duration_hours=duration_hours,
+            past_hours=past_hours
         )
         
         if not result.get("success", False):
