@@ -264,7 +264,7 @@ def _fmt_ist(ts: int) -> str:
 # Main decoder (named columns)
 # ----------------------------
 
-def HEALTH_EPS(hex_str: str) -> List[Dict[str, Any]]:
+def HEALTH_EPS_LIVE_PARAMETER(hex_str: str) -> List[Dict[str, Any]]:
     buf = _clean_hex_string(hex_str)
     pos = 0
 

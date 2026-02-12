@@ -1,74 +1,174 @@
 import struct
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-def HEALTH_ADCS_SAT_POS_ECEF_FRAME(hex_str):
-    # 1. Skip standard metadata header (26 bytes)
-    header_skip_bytes = 26
-    header_skip_chars = header_skip_bytes * 2
-    
-    if len(hex_str) < (header_skip_chars + 8):
-        print(f"[ERROR] Insufficient data length: {len(hex_str)}")
+
+# ---------------------------------------------------------------------
+# SPEC (only this changes per decoder)
+# ---------------------------------------------------------------------
+# Queue ID 30: ADCS_HM_SAT_POS_ECEF_FRAME
+# Table 70: HM Satellite position in ECEF frame format (29 bytes)
+#   - Operation Status (1)
+#   - Epoch Time (4)
+#   - ECEF X (double, 8)
+#   - ECEF Y (double, 8)
+#   - ECEF Z (double, 8)
+SPEC: Dict[str, Any] = {
+    "name": "HEALTH_ADCS_SAT_POS_ECEF_FRAME",
+    "expected_queue_id": 30,
+    "common_header": {
+        "skip_bytes": 26,
+        "fields": [
+            {"name": "Submodule_ID", "type": "UINT8"},
+            {"name": "Queue_ID", "type": "UINT8"},
+            {"name": "Number_of_Instances", "type": "UINT16_LE"},
+        ],
+    },
+    "segment": [
+        {"name": "Operation_Status", "type": "UINT8"},
+        {"name": "Epoch_Time_UTC", "type": "UINT32_LE", "transform": "EPOCH32_TO_UTC_DATETIME"},
+        {"name": "ECEF_X", "type": "FLOAT64_LE"},
+        {"name": "ECEF_Y", "type": "FLOAT64_LE"},
+        {"name": "ECEF_Z", "type": "FLOAT64_LE"},
+    ],
+    "segment_len_bytes": 29,
+}
+
+
+# ---------------------------------------------------------------------
+# Generic decode helpers (same across your decoders)
+# ---------------------------------------------------------------------
+class ByteReader:
+    def __init__(self, data: bytes):
+        self.data = data
+        self.i = 0
+
+    def remaining(self) -> int:
+        return len(self.data) - self.i
+
+    def skip(self, n: int) -> None:
+        if self.i + n > len(self.data):
+            raise ValueError("Not enough bytes to skip")
+        self.i += n
+
+    def _unpack(self, fmt: str, size: int) -> Any:
+        if self.i + size > len(self.data):
+            raise ValueError("Not enough bytes to read")
+        chunk = self.data[self.i : self.i + size]
+        self.i += size
+        return struct.unpack(fmt, chunk)[0]
+
+    def u8(self) -> int:
+        return self._unpack("<B", 1)
+
+    def u16le(self) -> int:
+        return self._unpack("<H", 2)
+
+    def u32le(self) -> int:
+        return self._unpack("<I", 4)
+
+    def i16le(self) -> int:
+        return self._unpack("<h", 2)
+
+    def f64le(self) -> float:
+        return self._unpack("<d", 8)
+
+
+def _normalize_hex(hex_str: str) -> bytes:
+    s = hex_str.replace(" ", "").replace("\n", "").replace("\r", "").replace("\t", "")
+    if len(s) % 2 != 0:
+        raise ValueError(f"Hex string has odd length: {len(s)}")
+    return bytes.fromhex(s)
+
+
+def _read_typed(reader: ByteReader, typ: str) -> Any:
+    if typ == "UINT8":
+        return reader.u8()
+    if typ == "UINT16_LE":
+        return reader.u16le()
+    if typ == "UINT32_LE":
+        return reader.u32le()
+    if typ == "INT16_LE":
+        return reader.i16le()
+    if typ == "FLOAT64_LE":
+        return reader.f64le()
+    raise ValueError(f"Unsupported type: {typ}")
+
+
+def _apply_transform(val: Any, transform: Optional[str]) -> Any:
+    if not transform:
+        return val
+    if transform == "EPOCH32_TO_UTC_DATETIME":
+        return datetime.fromtimestamp(int(val), tz=timezone.utc)
+    raise ValueError(f"Unsupported transform: {transform}")
+
+
+def _parse_common_header(reader: ByteReader, spec: Dict[str, Any]) -> Dict[str, Any]:
+    header = spec["common_header"]
+    reader.skip(int(header["skip_bytes"]))
+    out: Dict[str, Any] = {}
+    for f in header["fields"]:
+        out[f["name"]] = _read_typed(reader, f["type"])
+    return out
+
+
+def _decode_from_spec(hex_str: str, spec: Dict[str, Any]) -> List[Dict[str, Any]]:
+    try:
+        data = _normalize_hex(hex_str)
+    except Exception as e:
+        print(f"[ERROR] Invalid hex input: {e}")
         return []
 
-    # 2. Decoding QM metadata
-    # Submodule ID: byte 26
-    submodule_id = int(hex_str[header_skip_chars : header_skip_chars+2], 16)
-    
-    # Queue ID: byte 27
-    queue_id = int(hex_str[header_skip_chars+2 : header_skip_chars+4], 16)
-    
-    # Number of instances: 2 bytes (UINT16) at bytes 28-29
-    count_hex = hex_str[header_skip_chars+4 : header_skip_chars+8]
-    count = struct.unpack('<H', bytes.fromhex(count_hex))[0]
-    
-    if count == 0:
-        print(f"[WARN] Sensor count is zero (Parsed from hex: {count_hex}). Skipping parsing.")
+    r = ByteReader(data)
+
+    try:
+        hdr = _parse_common_header(r, spec)
+    except Exception as e:
+        print(f"[ERROR] Failed parsing header: {e}")
         return []
 
-    # 3. Data payload starts at byte 30
-    data_start_idx = header_skip_chars + 8
-    data_payload = hex_str[data_start_idx:]
-    
-    # Segment Length = 29 bytes = 58 hex chars (As per Table 67)
-    segment_len_bytes = 29
-    segment_len_chars = segment_len_bytes * 2
-    
-    segments = []
+    expected_q = spec.get("expected_queue_id")
+    if expected_q is not None and hdr.get("Queue_ID") != expected_q:
+        print(f"[WARN] Queue_ID mismatch: got {hdr.get('Queue_ID')} expected {expected_q}")
+
+    count = int(hdr.get("Number_of_Instances", 0))
+    if count <= 0:
+        return []
+
+    seg_len = int(spec["segment_len_bytes"])
+    seg_fields = spec["segment"]
+
+    segments: List[Dict[str, Any]] = []
+
     for idx in range(count):
-        start = idx * segment_len_chars
-        end = start + segment_len_chars
-        seg = data_payload[start:end]
-        
-        if len(seg) < segment_len_chars:
+        if r.remaining() < seg_len:
             break
-            
+
+        row = dict(hdr)
+        start_i = r.i
+
         try:
-            # Layout (Table 67): Operation Status (1B), Epoch Time (4B), X (8B double), Y (8B double), Z (8B double)
-            # Struct format: < B (1), I (4), d (8), d (8), d (8)
-            op_status, epoch_ti, pos_x, pos_y, pos_z = struct.unpack('<BIddd', bytes.fromhex(seg))
-            
-            # Convert epoch integer to human-readable format (UTC)
-            timestamp_human = datetime.fromtimestamp(epoch_ti, timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-            
-            segments.append({
-                'Submodule_ID': submodule_id,
-                'Queue_ID': queue_id,
-                'Number of Instances': count,
-                'Operation_Status': op_status,
-                'Epoch_Time_Human': timestamp_human,
-                'Sat_Pos_ECEF_X': pos_x,
-                'Sat_Pos_ECEF_Y': pos_y,
-                'Sat_Pos_ECEF_Z': pos_z,
-            })
+            for f in seg_fields:
+                raw = _read_typed(r, f["type"])
+                raw = _apply_transform(raw, f.get("transform"))
+                row[f["name"]] = raw
+
+            consumed = r.i - start_i
+            if consumed != seg_len:
+                print(f"[WARN] Segment {idx}: consumed {consumed} bytes, expected {seg_len}")
+
+            segments.append(row)
+
         except Exception as e:
-            print(f"[ERROR] Failed parsing SAT_POS_ECEF_FRAME segment {idx}: {e}")
+            print(f"[ERROR] Failed parsing segment {idx}: {e}")
+            r.i = start_i + seg_len
             continue
-            
+
     return segments
 
-if __name__ == "__main__":
-    # Test case with similar metadata to previous working examples
-    hex_string = "8cc57f00a5aaf0a2c26069270000008100046d020101ffffec00011e080000dfc260699a9241f95d92a840d3d420e86bc1ac4049d36a357df3b1c000eac2606970af80de9a10a840f0227b6fc10fad409ddff247d9ffb1c000f4c260697ca86cc8128ea740be1d6f16375dad4040b49a368a0bb2c00001c36069fc09858063eca640e1f002b255bbad40409efe3e0219b2c0000bc36069cd906aa5c06aa640e270185e5d05ae401ab218520323b2c00016c36069ae772454dee5a540dbab5dd9f24fae40068460d38b2cb2c00020c36069e46324084a60a540fe19b5d99d99ae40bce80a896735b2c0002ac36069ade2d75208daa440ac7c72ec5be2ae40f6571d1f963db2c08a3d201f3014dfb38506617601a776d55f502a191058464dc655494496655ca066ba"
-    results = HEALTH_ADCS_SAT_POS_ECEF_FRAME(hex_string.replace(" ", ""))
-    for r in results:
-        print(r)
+
+# ---------------------------------------------------------------------
+# Pipeline entry-point function (KEEP THIS NAME)
+# ---------------------------------------------------------------------
+def HEALTH_ADCS_SAT_POS_ECEF_FRAME(hex_str: str) -> List[Dict[str, Any]]:
+    return _decode_from_spec(hex_str, SPEC)

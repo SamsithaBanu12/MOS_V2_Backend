@@ -1,86 +1,206 @@
 import struct
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-def HEALTH_ADCS_RW_CURRENT(hex_str):
-    # 1. Skip standard metadata header (26 bytes)
-    header_skip_bytes = 26
-    header_skip_chars = header_skip_bytes * 2
-    
-    if len(hex_str) < (header_skip_chars + 8):
-        print(f"[ERROR] Insufficient data length: {len(hex_str)}")
+
+# ---------------------------------------------------------------------
+# SPEC (only this changes per decoder)
+# ---------------------------------------------------------------------
+SPEC: Dict[str, Any] = {
+    "name": "ADCS_HM_RW_CURRENT",
+    "expected_queue_id": 2,
+    "common_header": {
+        "skip_bytes": 26,
+        "fields": [
+            {"name": "Submodule_ID", "type": "UINT8"},
+            {"name": "Queue_ID", "type": "UINT8"},
+            {"name": "Number_of_Instances", "type": "UINT16_LE"},
+        ],
+    },
+
+    # Segment base per Table 22:
+    #   OperationStatus (1)
+    #   EpochTime (4)
+    #   n (1)  (# reaction wheels; expected 4)
+    #   RW currents array: n values, each uint16 RAW*0.1
+    "segment_base": [
+        {"name": "Operation_Status", "type": "UINT8"},
+        {"name": "Epoch_Time_UTC", "type": "UINT32_LE", "transform": "EPOCH32_TO_UTC_DATETIME"},
+        {"name": "RW_Count", "type": "UINT8"},
+    ],
+
+    # Variable part definition (array)
+    "var_array": {
+        "count_from": "RW_Count",
+        "item": {"name_prefix": "Reaction_Wheel_Current_", "type": "UINT16_LE", "scale": 0.1, "unit": "A"},
+        # If you want to enforce 4, keep it; otherwise set to None
+        "expected_count": 4,
+    },
+
+    # Minimum bytes for the fixed part of segment: 1 + 4 + 1 = 6
+    "segment_min_len_bytes": 6,
+}
+
+
+# ---------------------------------------------------------------------
+# Generic decode helpers (same across your decoders)
+# ---------------------------------------------------------------------
+class ByteReader:
+    def __init__(self, data: bytes):
+        self.data = data
+        self.i = 0
+
+    def remaining(self) -> int:
+        return len(self.data) - self.i
+
+    def skip(self, n: int) -> None:
+        if self.i + n > len(self.data):
+            raise ValueError("Not enough bytes to skip")
+        self.i += n
+
+    def _unpack(self, fmt: str, size: int) -> Any:
+        if self.i + size > len(self.data):
+            raise ValueError("Not enough bytes to read")
+        chunk = self.data[self.i : self.i + size]
+        self.i += size
+        return struct.unpack(fmt, chunk)[0]
+
+    def u8(self) -> int:
+        return self._unpack("<B", 1)
+
+    def u16le(self) -> int:
+        return self._unpack("<H", 2)
+
+    def u32le(self) -> int:
+        return self._unpack("<I", 4)
+
+
+def _normalize_hex(hex_str: str) -> bytes:
+    s = hex_str.replace(" ", "").replace("\n", "").replace("\r", "").replace("\t", "")
+    if len(s) % 2 != 0:
+        raise ValueError(f"Hex string has odd length: {len(s)}")
+    return bytes.fromhex(s)
+
+
+def _read_typed(reader: ByteReader, typ: str) -> Any:
+    if typ == "UINT8":
+        return reader.u8()
+    if typ == "UINT16_LE":
+        return reader.u16le()
+    if typ == "UINT32_LE":
+        return reader.u32le()
+    raise ValueError(f"Unsupported type: {typ}")
+
+
+def _apply_transform(val: Any, transform: Optional[str]) -> Any:
+    if not transform:
+        return val
+
+    if transform == "EPOCH32_TO_UTC_DATETIME":
+        # uint32 epoch seconds -> UTC datetime
+        return datetime.fromtimestamp(int(val), tz=timezone.utc)
+
+    raise ValueError(f"Unsupported transform: {transform}")
+
+
+def _apply_scale(val: Any, scale: Optional[float]) -> Any:
+    if scale is None:
+        return val
+    return val * float(scale)
+
+
+def _parse_common_header(reader: ByteReader, spec: Dict[str, Any]) -> Dict[str, Any]:
+    header = spec["common_header"]
+    reader.skip(int(header["skip_bytes"]))
+    out: Dict[str, Any] = {}
+    for f in header["fields"]:
+        out[f["name"]] = _read_typed(reader, f["type"])
+    return out
+
+
+def _decode_from_spec(hex_str: str, spec: Dict[str, Any]) -> List[Dict[str, Any]]:
+    try:
+        data = _normalize_hex(hex_str)
+    except Exception as e:
+        print(f"[ERROR] Invalid hex input: {e}")
         return []
 
-    # 2. Decoding QM metadata
-    submodule_id = int(hex_str[header_skip_chars : header_skip_chars+2], 16)
-    queue_id = int(hex_str[header_skip_chars+2 : header_skip_chars+4], 16)
-    
-    # Instance count (UINT16 at bytes 28-29)
-    count_hex = hex_str[header_skip_chars+4 : header_skip_chars+8]
-    count = struct.unpack('<H', bytes.fromhex(count_hex))[0]
-    
-    if count == 0:
+    r = ByteReader(data)
+
+    try:
+        hdr = _parse_common_header(r, spec)
+    except Exception as e:
+        print(f"[ERROR] Failed parsing header: {e}")
         return []
 
-    # 3. Data payload starts at byte 30
-    data_start_idx = header_skip_chars + 8
-    data_payload = hex_str[data_start_idx:]
-    
-    segments = []
-    pos_chars = 0
-    
-    for idx in range(count):
-        # We need at least 6 bytes (12 hex chars) to read the fixed part of the segment
-        # Offset 0: Operation Status (1B)
-        # Offset 1: Epoch Time (4B)
-        # Offset 5: n (1B)
-        if len(data_payload[pos_chars:]) < 12:
+    expected_q = spec.get("expected_queue_id")
+    if expected_q is not None and hdr.get("Queue_ID") != expected_q:
+        print(f"[WARN] Queue_ID mismatch: got {hdr.get('Queue_ID')} expected {expected_q}")
+
+    instances = int(hdr.get("Number_of_Instances", 0))
+    if instances <= 0:
+        return []
+
+    segments: List[Dict[str, Any]] = []
+
+    base_fields = spec["segment_base"]
+    var_def = spec["var_array"]
+    min_len = int(spec["segment_min_len_bytes"])
+
+    for seg_idx in range(instances):
+        if r.remaining() < min_len:
             break
-            
-        header_hex = data_payload[pos_chars : pos_chars + 12]
+
+        row = dict(hdr)
+        start_i = r.i
+
         try:
-            # Layout follows Table 22 strictly: < B (1), I (4), B (1)
-            op_status, epoch_ti, n_wheels = struct.unpack('<BI B', bytes.fromhex(header_hex))
-            
-            # Full segment length = 6 + 2*n bytes
-            seg_len_bytes = 6 + 2 * n_wheels
-            seg_len_chars = seg_len_bytes * 2
-            
-            if len(data_payload[pos_chars:]) < seg_len_chars:
-                print(f"[ERROR] Incomplete segment for instance {idx}")
-                break
-                
-            full_seg_hex = data_payload[pos_chars : pos_chars + seg_len_chars]
-            # Currents start at offset 6 (char 12)
-            currents_data = full_seg_hex[12:]
-            
-            # Construct row FOLLOWING TABLE ORDER
-            row = {
-                'Submodule_ID': submodule_id,
-                'Queue_ID': queue_id,
-                'Number of Instances': count,
-                'Operation_Status': op_status,
-                'Epoch_Time_Human': datetime.fromtimestamp(epoch_ti, timezone.utc).strftime('%Y-%m-%d %H:%M:%S'),
-                'Number_of_reaction_wheel': n_wheels
-            }
-            
-            # Initialize 4 standard current columns to ensure DB schema stability
-            for i in range(1, 5):
-                row[f'Reaction_wheel_current_{i}'] = None
-                
-            # Fill existing wheel data
-            for i in range(n_wheels):
-                cur_hex = currents_data[i*4 : (i+1)*4]
-                if cur_hex:
-                    raw_val = struct.unpack('<H', bytes.fromhex(cur_hex))[0]
-                    # Current = RAWVAL * 0.1
-                    row[f'Reaction_wheel_current_{i+1}'] = round(raw_val * 0.1, 2)
-            
+            # Read fixed/base fields
+            for f in base_fields:
+                raw = _read_typed(r, f["type"])
+                raw = _apply_transform(raw, f.get("transform"))
+                raw = _apply_scale(raw, f.get("scale"))
+                row[f["name"]] = raw
+
+            # Read variable array
+            count_from = var_def["count_from"]
+            n = int(row.get(count_from, 0))
+
+            expected_n = var_def.get("expected_count")
+            if expected_n is not None and n != int(expected_n):
+                # Spec says n is always 4; if not, warn but still try to parse what is present.
+                print(f"[WARN] Segment {seg_idx}: RW_Count={n}, expected {expected_n}")
+
+            item_def = var_def["item"]
+            prefix = item_def["name_prefix"]
+            item_type = item_def["type"]
+            item_scale = item_def.get("scale")
+            item_unit = item_def.get("unit")  # not used, but kept for readability
+
+            # Each item is 2 bytes (UINT16) as per table, scaled by 0.1
+            needed = 2 * n
+            if r.remaining() < needed:
+                raise ValueError(f"Not enough bytes for RW current array: need {needed}, have {r.remaining()}")
+
+            for i in range(1, n + 1):
+                v = _read_typed(r, item_type)
+                v = _apply_scale(v, item_scale)
+                row[f"{prefix}{i}"] = v
+
             segments.append(row)
-            pos_chars += seg_len_chars
-            
+
         except Exception as e:
-            print(f"[ERROR] Failed parsing segment {idx}: {e}")
+            print(f"[ERROR] Failed parsing segment {seg_idx}: {e}")
+            # We can't know exact segment size if n is wrong, but best-effort:
+            # rollback to start and break to avoid cascading misalignment.
+            r.i = start_i
             break
-            
+
     return segments
 
+
+# ---------------------------------------------------------------------
+# Pipeline entry-point function (keep name as needed by your dispatcher)
+# ---------------------------------------------------------------------
+def HEALTH_ADCS_RW_CURRENT(hex_str: str) -> List[Dict[str, Any]]:
+    return _decode_from_spec(hex_str, SPEC)

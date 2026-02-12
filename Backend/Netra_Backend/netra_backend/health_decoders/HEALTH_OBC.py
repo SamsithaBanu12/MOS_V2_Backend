@@ -1,9 +1,12 @@
 import struct
+import math
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
-# -----------------------------
+
+# ---------------------------------------------------------------------
 # MAPPINGS
-# -----------------------------
+# ---------------------------------------------------------------------
 FSM_STATE_MAP = {
     0: "obc init state",
     1: "obc active power critical state",
@@ -25,152 +28,241 @@ RESET_CAUSE_MAP = {
     7: "Brownout reset",
 }
 
-# The reference manual/hex strings show a fixed part of ~31 bytes 
-# plus a task array. Based on hex analysis, the instance size is 
-# approximately 153 bytes (31 + 61*2). We handle potential 
-# padding or shifts gracefully.
-FIXED_PART_SIZE = 31
-TASK_STATUS_SIZE = 2 # uint16_t
-MAX_TASKS_SLOTS = 64 # Observed slots in some packets
 
-# -----------------------------
-# DECODER: HEALTH_OBC
-# -----------------------------
-def HEALTH_OBC(hex_str: str):
-    # 1. Skip common metadata header (26 bytes)
-    header_skip_bytes = 26
-    header_skip_chars = header_skip_bytes * 2
-    
-    if len(hex_str) < (header_skip_chars + 8):
-        print(f"[ERROR] Insufficient data length: {len(hex_str)}")
+# ---------------------------------------------------------------------
+# SPEC
+# ---------------------------------------------------------------------
+SPEC: Dict[str, Any] = {
+    "name": "HEALTH_OBC",
+    "expected_queue_id": 0,
+    "common_header": {
+        "skip_bytes": 26,
+        "fields": [
+            {"name": "Submodule_ID", "type": "UINT8"},
+            {"name": "Queue_ID", "type": "UINT8"},
+            {"name": "Number_of_Instances", "type": "UINT16_LE"},
+        ],
+    },
+    # Fixed OBC instance part size (till Reserved4)
+    "fixed_instance_bytes": 35,
+    # Plausible epoch seconds window for the low32 part (adjust if needed)
+    "epoch_min": int(datetime(2000, 1, 1, tzinfo=timezone.utc).timestamp()),
+    "epoch_max": int(datetime(2100, 1, 1, tzinfo=timezone.utc).timestamp()),
+}
+
+
+# ---------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------
+def _normalize_hex(hex_str: str) -> bytes:
+    s = hex_str.replace(" ", "").replace("\n", "").replace("\r", "").replace("\t", "")
+    if len(s) % 2 != 0:
+        raise ValueError(f"Hex string has odd length: {len(s)}")
+    return bytes.fromhex(s)
+
+
+def _parse_common_header(data: bytes, spec: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
+    header = spec["common_header"]
+    cursor = int(header["skip_bytes"])
+
+    if len(data) < cursor + 4:
+        raise ValueError("Not enough data for common header")
+
+    out: Dict[str, Any] = {}
+    for f in header["fields"]:
+        t = f["type"]
+        if t == "UINT8":
+            out[f["name"]] = struct.unpack_from("<B", data, cursor)[0]
+            cursor += 1
+        elif t == "UINT16_LE":
+            out[f["name"]] = struct.unpack_from("<H", data, cursor)[0]
+            cursor += 2
+        else:
+            raise ValueError(f"Unsupported header type: {t}")
+
+    return out, cursor
+
+
+def _timestamp_u64_to_utc(ts_u64: int) -> Optional[datetime]:
+    """
+    Your dump shows timestamps like: a6 bd 7a 69 00 00 00 00
+    i.e. uint64 where high32 = 0 and low32 = epoch seconds.
+    """
+    try:
+        low32 = ts_u64 & 0xFFFFFFFF
+        high32 = (ts_u64 >> 32) & 0xFFFFFFFF
+
+        # Prefer the observed pattern: high32 == 0, low32 is epoch seconds
+        if high32 == 0:
+            return datetime.fromtimestamp(int(low32), tz=timezone.utc)
+
+        # Fallback (rare): treat whole u64 as seconds
+        return datetime.fromtimestamp(int(ts_u64), tz=timezone.utc)
+    except Exception:
+        return None
+
+
+def _is_plausible_timestamp_marker(data: bytes, pos: int, spec: Dict[str, Any]) -> bool:
+    """
+    Marker = 8 bytes (uint64 LE) such that:
+      - high32 == 0
+      - low32 within [epoch_min, epoch_max]
+    """
+    if pos < 0 or pos + 8 > len(data):
+        return False
+
+    ts_u64 = struct.unpack_from("<Q", data, pos)[0]
+    low32 = ts_u64 & 0xFFFFFFFF
+    high32 = (ts_u64 >> 32) & 0xFFFFFFFF
+
+    if high32 != 0:
+        return False
+
+    return spec["epoch_min"] <= low32 <= spec["epoch_max"]
+
+
+def _find_next_timestamp_marker(data: bytes, start: int, spec: Dict[str, Any]) -> Optional[int]:
+    last = len(data) - 8
+    for i in range(start, last + 1):
+        if _is_plausible_timestamp_marker(data, i, spec):
+            return i
+    return None
+
+
+def _decode_u16le_array(buf: bytes) -> List[int]:
+    n = len(buf) // 2
+    if n <= 0:
+        return []
+    return list(struct.unpack_from("<" + "H" * n, buf, 0))
+
+
+def _parse_fixed_instance(data: bytes, pos: int) -> Dict[str, Any]:
+    """
+    Fixed 35 bytes layout:
+      0:  u64 timestamp (LE)
+      8:  u8  fsm_state
+      9:  u8  num_resets
+      10: u16 io_err
+      12: u8  sys_err
+      13: f32 cpuUtil
+      17: u32 i_ram_rem_heap
+      21: u32 t_ram_rem_heap
+      25: u32 t_uptime
+      29: u8  t_reset_cause
+      30: u8  task_count
+      31..34: reserved1..4 (u8)
+    """
+    out: Dict[str, Any] = {}
+
+    ts_u64 = struct.unpack_from("<Q", data, pos + 0)[0]
+    out["Timestamp_Raw"] = ts_u64
+    ts_dt = _timestamp_u64_to_utc(ts_u64)
+    if ts_dt is not None:
+        out["Timestamp_UTC"] = ts_dt
+
+    fsm = struct.unpack_from("<B", data, pos + 8)[0]
+    out["Fsm_State"] = fsm
+    out["Fsm_State_Str"] = FSM_STATE_MAP.get(fsm, f"UNKNOWN({fsm})")
+
+    out["Num_Resets"] = struct.unpack_from("<B", data, pos + 9)[0]
+    out["Io_Err"] = struct.unpack_from("<H", data, pos + 10)[0]
+    out["Sys_Err"] = struct.unpack_from("<B", data, pos + 12)[0]
+
+    cpu = struct.unpack_from("<f", data, pos + 13)[0]
+    out["Cpu_Util"] = cpu
+
+    out["I_Ram_Rem_Heap"] = struct.unpack_from("<I", data, pos + 17)[0]
+    out["T_Ram_Rem_Heap"] = struct.unpack_from("<I", data, pos + 21)[0]
+    out["T_Uptime"] = struct.unpack_from("<I", data, pos + 25)[0]
+
+    rc = struct.unpack_from("<B", data, pos + 29)[0]
+    out["T_Reset_Cause"] = rc
+    out["T_Reset_Cause_Str"] = RESET_CAUSE_MAP.get(rc, f"UNKNOWN({rc})")
+
+    out["Task_Count"] = struct.unpack_from("<B", data, pos + 30)[0]
+
+    out["Reserved1"] = struct.unpack_from("<B", data, pos + 31)[0]
+    out["Reserved2"] = struct.unpack_from("<B", data, pos + 32)[0]
+    out["Reserved3"] = struct.unpack_from("<B", data, pos + 33)[0]
+    out["Reserved4"] = struct.unpack_from("<B", data, pos + 34)[0]
+
+    return out
+
+
+# ---------------------------------------------------------------------
+# Decoder
+# ---------------------------------------------------------------------
+def _decode_obc(hex_str: str, spec: Dict[str, Any]) -> List[Dict[str, Any]]:
+    try:
+        data = _normalize_hex(hex_str)
+    except Exception as e:
+        print(f"[ERROR] Invalid hex input: {e}")
         return []
 
-    # Submodule ID: byte 26
-    submodule_id = int(hex_str[header_skip_chars : header_skip_chars+2], 16)
-    # Queue ID: byte 27
-    queue_id = int(hex_str[header_skip_chars+2 : header_skip_chars+4], 16)
-    
-    # Number of instances: 2 bytes (UINT16) at bytes 28-29
-    count_hex = hex_str[header_skip_chars+4 : header_skip_chars+8]
-    count = struct.unpack('<H', bytes.fromhex(count_hex))[0]
-    
-    if count == 0:
+    try:
+        hdr, cursor = _parse_common_header(data, spec)
+    except Exception as e:
+        print(f"[ERROR] Failed parsing header: {e}")
         return []
 
-    # 3. Data payload starts at byte 30
-    data_start_idx = header_skip_chars + 8
-    data_payload = hex_str[data_start_idx:]
-    
-    pos = 0
-    segments = []
-    
-    # We attempt to parse instances. If an instance appears misaligned 
-    # (e.g. invalid timestamp), we return None for the date to avoid DB errors.
-    
+    expected_q = spec.get("expected_queue_id")
+    if expected_q is not None and hdr.get("Queue_ID") != expected_q:
+        print(f"[WARN] Queue_ID mismatch: got {hdr.get('Queue_ID')} expected {expected_q}")
+
+    count = int(hdr.get("Number_of_Instances", 0))
+    if count <= 0:
+        return []
+
+    fixed_len = int(spec["fixed_instance_bytes"])
+    segments: List[Dict[str, Any]] = []
+
+    # Resync to first timestamp marker (in case cursor isn't exactly aligned)
+    first = _find_next_timestamp_marker(data, cursor, spec)
+    if first is None:
+        # If we can't find marker, fallback to cursor
+        first = cursor
+
+    cursor = first
+
     for idx in range(count):
-        # We use a 153-byte baseline (31 + 61*2) but check for enough remaining data
-        # If the packet is larger (e.g. 159 bytes), we align to the next instance 
-        # based on the observed pattern in the provided hex string.
-        # Given the "Diffs" observed: 159, 152, 153, 153...
-        # We will try to parse based on task_count read from the packet.
-        
-        if len(data_payload[pos:]) < (FIXED_PART_SIZE * 2):
+        if cursor + fixed_len > len(data):
             break
-            
-        fixed_hex = data_payload[pos : pos + FIXED_PART_SIZE*2]
-        fixed_data = bytes.fromhex(fixed_hex)
-        
-        try:
-            # Layout (no padding): QBBHBfIIIBB
-            fields = struct.unpack('<QBBHBfIIIBB', fixed_data)
-        except Exception as e:
-            print(f"[ERROR] Failed unpacking fixed part of instance {idx}: {e}")
-            break
-            
-        ts64, fsm_code, resets, io_err, sys_err, cpu_util, iram, eram, uptime, cause_code, task_count = fields
-        
-        # Advance position by fixed part
-        pos += FIXED_PART_SIZE * 2
-        
-        # Convert Timestamp
-        ts_val = ts64
-        # Detection for seconds, ms, us
-        if ts_val > 4102444800:
-            if ts_val > 4102444800000:
-                ts_val //= 1000000
-            else:
-                ts_val //= 1000
-        
-        ts_dt = None
-        try:
-            # Validate timestamp is somewhat reasonable (after 2000)
-            if ts_val > 946684800: 
-                ts_dt = datetime.fromtimestamp(ts_val, timezone.utc)
-            else:
-                ts_dt = None
-        except Exception:
-            ts_dt = None
 
-        seg = {
-            "Submodule_ID": submodule_id,
-            "Queue_ID": queue_id,
-            "Number of Instances": count,
-            "Epoch_Time_Human": ts_dt, # Datetime object or None
-            "FSM_State": FSM_STATE_MAP.get(fsm_code, f"UNKNOWN({fsm_code})"),
-            "Number_of_Resets": resets,
-            "IO_Errors": io_err,
-            "System_Errors": sys_err,
-            "CPU_Utilisation": cpu_util,
-            "IRAM_Rem_Heap": iram,
-            "ERAM_Rem_Heap": eram,
-            "Uptime": uptime,
-            "Reset_Cause": RESET_CAUSE_MAP.get(cause_code, f"UNKNOWN({cause_code})"),
-            "Task_Count": task_count,
-        }
-        
-        # Parse Task Statuses (task_count * 2 bytes)
-        # We read up to 64 columns for the DB, but only consume task_count * 2 bytes from payload
-        for i in range(64):
-            col_name = f"Task_{i+1:02d}_Status"
-            if i < task_count:
-                if len(data_payload[pos:]) >= 4:
-                    task_data = bytes.fromhex(data_payload[pos : pos + 4])
-                    pos += 4
-                    st = struct.unpack('<H', task_data)[0]
-                    seg[col_name] = "IPC_Fail_Count" if st == 1 else "SUCCESS" if st == 0 else f"UNKNOWN({st})"
-                else:
-                    seg[col_name] = "MISSING"
-            else:
-                seg[col_name] = None
-                
-        # CRITICAL: Based on the "159, 152, 153" analysis, there is non-task padding 
-        # or inconsistent spacing between instances. If we detect a "61 75 67 00" 
-        # pattern ahead within a few bytes, we skip to it.
-        # For now, we just skip one extra byte if we aren't aligned to a timestamp-like value.
-        while pos < len(data_payload) - 16:
-            # Look for common year/month bytes in the next timestamp 64-bit LE
-            # e.g. 0x0000000067...
-            if data_payload[pos+8:pos+16] == "61756700": # Specific to Jan 2025
-                 break
-            # Or if the next 16 chars match ANY valid timestamp start (generic)
-            # This is complex, so we limit to skipping max 8 bytes of padding
-            if (idx < count - 1) and (pos % 2 == 0):
-                # Check if next bytes look like a timestamp
-                # (Simple check: last 4 bytes are 0)
-                if data_payload[pos+8:pos+16] == "00000000":
-                    break
-            
-            # If no alignment found, just stop skipping if we moved too much
-            if pos > (idx + 1) * 320: # Roughly 160 bytes per instance
+        # Ensure we are at an instance start; if not, find next marker
+        if not _is_plausible_timestamp_marker(data, cursor, spec):
+            nxt = _find_next_timestamp_marker(data, cursor + 1, spec)
+            if nxt is None:
                 break
-            
-            # Simple skip if we know there is padding (like the 6 bytes in Inst 1)
-            # This is a hack for this specific stream: 
-            # if we see a 3d (count) then tasks...
-            break # Fallback to standard flow
-            
-        segments.append(seg)
-        
+            cursor = nxt
+            if cursor + fixed_len > len(data):
+                break
+
+        row = dict(hdr)
+        fixed = _parse_fixed_instance(data, cursor)
+        row.update(fixed)
+
+        after_fixed = cursor + fixed_len
+
+        # Find next instance start (next timestamp marker)
+        next_start = _find_next_timestamp_marker(data, after_fixed, spec)
+
+        if next_start is None:
+            extras = data[after_fixed:]
+            row["Ipc_Fail_Counter_List"] = _decode_u16le_array(extras)
+            segments.append(row)
+            break
+
+        extras = data[after_fixed:next_start]
+        row["Ipc_Fail_Counter_List"] = _decode_u16le_array(extras)
+        segments.append(row)
+
+        cursor = next_start
+
     return segments
 
 
+# ---------------------------------------------------------------------
+# Pipeline entry-point
+# ---------------------------------------------------------------------
+def HEALTH_OBC(hex_str: str) -> List[Dict[str, Any]]:
+    return _decode_obc(hex_str, SPEC)

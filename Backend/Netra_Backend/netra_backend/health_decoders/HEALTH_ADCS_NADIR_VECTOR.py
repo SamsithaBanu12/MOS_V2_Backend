@@ -6,16 +6,9 @@ from typing import Any, Dict, List, Optional
 # ---------------------------------------------------------------------
 # SPEC (only this changes per decoder)
 # ---------------------------------------------------------------------
-# Queue ID 25: ADCS_HM_MGTRQR_CMD
-# Table 62: HM Magnetorquer command telemetry format (11 bytes)
-#   - Operation Status (1)
-#   - Epoch Time (4)
-#   - X duty-cycle (int16)
-#   - Y duty-cycle (int16)
-#   - Z duty-cycle (int16)
 SPEC: Dict[str, Any] = {
-    "name": "HEALTH_ADCS_MGTRQR_CMD",
-    "expected_queue_id": 25,
+    "name": "HEALTH_ADCS_NADIR_VECTOR",
+    "expected_queue_id": 11,
     "common_header": {
         "skip_bytes": 26,
         "fields": [
@@ -24,12 +17,13 @@ SPEC: Dict[str, Any] = {
             {"name": "Number_of_Instances", "type": "UINT16_LE"},
         ],
     },
+    # Table 37: HM Nadir vector measurement format (11 bytes)
     "segment": [
         {"name": "Operation_Status", "type": "UINT8"},
         {"name": "Epoch_Time_UTC", "type": "UINT32_LE", "transform": "EPOCH32_TO_UTC_DATETIME"},
-        {"name": "MGTRQR_Cmd_Duty_X", "type": "INT16_LE"},
-        {"name": "MGTRQR_Cmd_Duty_Y", "type": "INT16_LE"},
-        {"name": "MGTRQR_Cmd_Duty_Z", "type": "INT16_LE"},
+        {"name": "Nadir_Vector_X", "type": "INT16_LE", "scale": 0.001},
+        {"name": "Nadir_Vector_Y", "type": "INT16_LE", "scale": 0.001},
+        {"name": "Nadir_Vector_Z", "type": "INT16_LE", "scale": 0.001},
     ],
     "segment_len_bytes": 11,
 }
@@ -100,6 +94,12 @@ def _apply_transform(val: Any, transform: Optional[str]) -> Any:
     raise ValueError(f"Unsupported transform: {transform}")
 
 
+def _apply_scale(val: Any, scale: Optional[float]) -> Any:
+    if scale is None:
+        return val
+    return val * float(scale)
+
+
 def _parse_common_header(reader: ByteReader, spec: Dict[str, Any]) -> Dict[str, Any]:
     header = spec["common_header"]
     reader.skip(int(header["skip_bytes"]))
@@ -148,6 +148,7 @@ def _decode_from_spec(hex_str: str, spec: Dict[str, Any]) -> List[Dict[str, Any]
             for f in seg_fields:
                 raw = _read_typed(r, f["type"])
                 raw = _apply_transform(raw, f.get("transform"))
+                raw = _apply_scale(raw, f.get("scale"))
                 row[f["name"]] = raw
 
             consumed = r.i - start_i
@@ -168,5 +169,5 @@ def _decode_from_spec(hex_str: str, spec: Dict[str, Any]) -> List[Dict[str, Any]
 # ---------------------------------------------------------------------
 # Pipeline entry-point function (KEEP THIS NAME)
 # ---------------------------------------------------------------------
-def HEALTH_ADCS_MGTRQR_CMD(hex_str: str) -> List[Dict[str, Any]]:
+def HEALTH_ADCS_NADIR_VECTOR(hex_str: str) -> List[Dict[str, Any]]:
     return _decode_from_spec(hex_str, SPEC)

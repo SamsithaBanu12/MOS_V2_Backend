@@ -1,113 +1,182 @@
+import struct
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-import struct 
-from datetime import datetime
-def HEALTH_ADCS_CMD_ATTITUDE_ANGLE(hex_str):
-    # hex_str is expected to be a continuous hex string (no spaces)
-    
-    # 1. First 26 bytes (52 hex chars) are simple skip
-    header_skip_bytes = 26
-    header_skip_chars = header_skip_bytes * 2
-    
-    # Ensure we have enough data for the header
-    if len(hex_str) < (header_skip_chars + 8):
-        print(f"[ERROR] Insufficient data length: {len(hex_str)}")
+
+SPEC: Dict[str, Any] = {
+    "name": "HEALTH_ADCS_CMD_ATTITUDE_ANGLE",
+    "expected_queue_id": 22,
+    "common_header": {
+        "skip_bytes": 26,
+        "fields": [
+            {"name": "Submodule_ID", "type": "UINT8"},
+            {"name": "Queue_ID", "type": "UINT8"},
+            {"name": "Number_of_Instances", "type": "UINT16_LE"},
+        ],
+    },
+    "segment": [
+        {"name": "Operation_Status", "type": "UINT8"},
+        {"name": "Epoch_Time_UTC", "type": "UINT32_LE", "transform": "EPOCH32_TO_UTC_DATETIME"},
+        # read raw doubles first
+        {"name": "Raw_1", "type": "FLOAT64_LE"},
+        {"name": "Raw_2", "type": "FLOAT64_LE"},
+        {"name": "Raw_3", "type": "FLOAT64_LE"},
+        {"name": "Raw_4", "type": "FLOAT64_LE"},
+    ],
+    "segment_len_bytes": 37,
+}
+
+
+class ByteReader:
+    def __init__(self, data: bytes):
+        self.data = data
+        self.i = 0
+
+    def remaining(self) -> int:
+        return len(self.data) - self.i
+
+    def skip(self, n: int) -> None:
+        if self.i + n > len(self.data):
+            raise ValueError("Not enough bytes to skip")
+        self.i += n
+
+    def _unpack(self, fmt: str, size: int) -> Any:
+        if self.i + size > len(self.data):
+            raise ValueError("Not enough bytes to read")
+        chunk = self.data[self.i : self.i + size]
+        self.i += size
+        return struct.unpack(fmt, chunk)[0]
+
+    def u8(self) -> int:
+        return self._unpack("<B", 1)
+
+    def u16le(self) -> int:
+        return self._unpack("<H", 2)
+
+    def u32le(self) -> int:
+        return self._unpack("<I", 4)
+
+    def f64le(self) -> float:
+        return self._unpack("<d", 8)
+
+
+def _normalize_hex(hex_str: str) -> bytes:
+    s = hex_str.replace(" ", "").replace("\n", "").replace("\r", "").replace("\t", "")
+    if len(s) % 2 != 0:
+        raise ValueError(f"Hex string has odd length: {len(s)}")
+    return bytes.fromhex(s)
+
+
+def _read_typed(reader: ByteReader, typ: str) -> Any:
+    if typ == "UINT8":
+        return reader.u8()
+    if typ == "UINT16_LE":
+        return reader.u16le()
+    if typ == "UINT32_LE":
+        return reader.u32le()
+    if typ == "FLOAT64_LE":
+        return reader.f64le()
+    raise ValueError(f"Unsupported type: {typ}")
+
+
+def _apply_transform(val: Any, transform: Optional[str]) -> Any:
+    if not transform:
+        return val
+    if transform == "EPOCH32_TO_UTC_DATETIME":
+        return datetime.fromtimestamp(int(val), tz=timezone.utc)
+    raise ValueError(f"Unsupported transform: {transform}")
+
+
+def _parse_common_header(reader: ByteReader, spec: Dict[str, Any]) -> Dict[str, Any]:
+    header = spec["common_header"]
+    reader.skip(int(header["skip_bytes"]))
+    out: Dict[str, Any] = {}
+    for f in header["fields"]:
+        out[f["name"]] = _read_typed(reader, f["type"])
+    return out
+
+
+def _decode_from_spec(hex_str: str, spec: Dict[str, Any]) -> List[Dict[str, Any]]:
+    try:
+        data = _normalize_hex(hex_str)
+    except Exception as e:
+        print(f"[ERROR] Invalid hex input: {e}")
         return []
 
-    # 2. Decoding follows little endian format
-    
-    # Submodule ID: 1 byte at offset 26
-    submodule_id = int(hex_str[header_skip_chars : header_skip_chars+2], 16)
-    
-    # Queue ID: 1 byte at offset 27
-    queue_id = int(hex_str[header_skip_chars+2 : header_skip_chars+4], 16)
-    
-    # Number of instances: 2 bytes at offset 28
-    count_hex = hex_str[header_skip_chars+4 : header_skip_chars+8]
-    count = struct.unpack('<H', bytes.fromhex(count_hex))[0]
-    
-    if count == 0:
-        print(f"[WARN] Sensor count is zero (Parsed from hex: {count_hex}). Skipping parsing.")
+    r = ByteReader(data)
+
+    try:
+        hdr = _parse_common_header(r, spec)
+    except Exception as e:
+        print(f"[ERROR] Failed parsing header: {e}")
         return []
 
-    # Data starts at offset 30 bytes (60 chars)
-    data_start_idx = header_skip_chars + 8
-    data_payload = hex_str[data_start_idx:]
-    
-    # Segment Length = 37 bytes = 74 hex chars
-    segment_len_bytes = 37
-    segment_len_chars = segment_len_bytes * 2
-    
-    segments = []
-    
+    expected_q = spec.get("expected_queue_id")
+    if expected_q is not None and hdr.get("Queue_ID") != expected_q:
+        print(f"[WARN] Queue_ID mismatch: got {hdr.get('Queue_ID')} expected {expected_q}")
+
+    count = int(hdr.get("Number_of_Instances", 0))
+    if count <= 0:
+        return []
+
+    seg_len = int(spec["segment_len_bytes"])
+    seg_fields = spec["segment"]
+
+    segments: List[Dict[str, Any]] = []
+
     for idx in range(count):
-        start = idx * segment_len_chars
-        end = start + segment_len_chars
-        
-        seg = data_payload[start:end]
-        
-        if len(seg) < segment_len_chars:
+        if r.remaining() < seg_len:
             break
-            
-        # Segment Structure (37 bytes):
-        # 0   (1 byte) : Operation Status (UINT)
-        # 1-4 (4 bytes): Epoch Time (UINT)
-        # 5-12(8 bytes): Commanded Roll Angle (DOUBLE) * 0.01
-        # 13-20(8 bytes): Commanded Pitch Angle (DOUBLE) * 0.01
-        # 21-28(8 bytes): Commanded Yaw Angle (DOUBLE) * 0.01
-        # 29-36(8 bytes): Check/Quaternion (DOUBLE)
-        
+
+        row = dict(hdr)
+        start_i = r.i
+
         try:
-            offset = 0
-            
-            # Operation Status
-            operation_status = int(seg[offset:offset+2], 16)
-            offset += 2
-            
-            # Epoch Time
-            epoch_hex = seg[offset:offset+8]
-            epoch_time = struct.unpack('<I', bytes.fromhex(epoch_hex))[0]
-            epoch_time_human = datetime.utcfromtimestamp(epoch_time).strftime('%Y-%m-%d %H:%M:%S')
-            offset += 8
-            
-            # Roll (8 bytes)
-            roll = struct.unpack('<d', bytes.fromhex(seg[offset:offset+16]))[0] * 0.01
-            offset += 16
-            
-            # Pitch (8 bytes)
-            pitch = struct.unpack('<d', bytes.fromhex(seg[offset:offset+16]))[0] * 0.01
-            offset += 16
-            
-            # Yaw (8 bytes)
-            yaw = struct.unpack('<d', bytes.fromhex(seg[offset:offset+16]))[0] * 0.01
-            offset += 16
-            
-            # Check/Quaternion4 (8 bytes)
-            val4 = struct.unpack('<d', bytes.fromhex(seg[offset:offset+16]))[0]
-            offset += 16
-            
-            interpretation = "Quaternion"
-            if val4 >= 2:
-                interpretation = "RPY"
-            
-            segments.append({
-                'Submodule_ID':         submodule_id,
-                'Queue_ID':             queue_id,
-                'Number_of_Instances':  count,
-                'Operation_Status':     operation_status,
-                'Epoch_Time_Human':     epoch_time_human,
-                'Commanded_Roll':       roll,
-                'Commanded_Pitch':      pitch,
-                'Commanded_Yaw':        yaw,
-                'Quaternion_4_Check':   val4,
-                'Interpretation':       interpretation
-            })
-            
+            for f in seg_fields:
+                raw = _read_typed(r, f["type"])
+                raw = _apply_transform(raw, f.get("transform"))
+                row[f["name"]] = raw
+
+            # ---- Embed your rule here (post-process) ----
+            v1 = float(row.pop("Raw_1"))
+            v2 = float(row.pop("Raw_2"))
+            v3 = float(row.pop("Raw_3"))
+            v4 = float(row.pop("Raw_4"))
+
+            # keep raw values too (optional but safe)
+            row["Cmd_Value_1"] = v1
+            row["Cmd_Value_2"] = v2
+            row["Cmd_Value_3"] = v3
+            row["Cmd_Value_4"] = v4
+
+            if v4 >= 2.0:
+                # treat as RPY
+                row["Attitude_Format"] = "RPY"
+                row["Cmd_Roll_Deg"] = v1
+                row["Cmd_Pitch_Deg"] = v2
+                row["Cmd_Yaw_Deg"] = v3
+                row["Mode_Or_Quat4_Val"] = v4
+            else:
+                # treat as Quaternion
+                row["Attitude_Format"] = "QUATERNION"
+                row["Cmd_Quat1"] = v1
+                row["Cmd_Quat2"] = v2
+                row["Cmd_Quat3"] = v3
+                row["Cmd_Quat4"] = v4
+
+            consumed = r.i - start_i
+            if consumed != seg_len:
+                print(f"[WARN] Segment {idx}: consumed {consumed} bytes, expected {seg_len}")
+
+            segments.append(row)
+
         except Exception as e:
             print(f"[ERROR] Failed parsing segment {idx}: {e}")
+            r.i = start_i + seg_len
             continue
-            
+
     return segments
 
-# CORRECTED HEX STRING (Added missing 00 in header for 26-byte alignment)
-hex_string = "8c c5 7e 00 a5 aa f0 a2 c2 60 69 26 00 00 00 81 00 04 6d 02 01 01 ff ff 2c 01 01 16 08 00 00 df c2 60 69 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 f0 3f 00 ea c2 60 69 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 f0 3f 00 f4 c2 60 69 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 f0 3f 00 01 c3 60 69 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 f0 3f 00 0b c3 60 69 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 f0 3f 00 16 c3 60 69 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 f0 3f 00 20 c3 60 69 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 f0 3f 00 2a c3 60 69 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 f0 3f 39 25 3a 42 9d 1f 18 b0 cd 0b 39 29 04 d1 b7 c2 f6 18 9d 5c fa 3b e1 7d 75 79 29 36 76 76 7b b5 c9 ba"
-print(HEALTH_ADCS_CMD_ATTITUDE_ANGLE(hex_string.replace(" ","")))
+
+def HEALTH_ADCS_CMD_ATTITUDE_ANGLE(hex_str: str) -> List[Dict[str, Any]]:
+    return _decode_from_spec(hex_str, SPEC)

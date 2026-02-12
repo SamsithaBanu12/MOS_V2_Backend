@@ -1,79 +1,167 @@
 import struct
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 
-def HEALTH_ADCS_EST_ATTITUDE_ANGLE(hex_str):
-    # Standard header is 26 bytes. Payload starts at byte 26.
-    # Payload header (Submodule, Queue, NumInstance) is 4 bytes.
-    # Total skip to start of segments is 26 + 4 = 30 bytes.
-    header_skip_len = 30
-    
-    # TM_LEN is at bytes 24-25 (indices 48:52)
-    tm_len_raw = struct.unpack('<H', bytes.fromhex(hex_str[48:52]))[0]
+# ---------------------------------------------------------------------
+# SPEC (only this changes per decoder)
+# ---------------------------------------------------------------------
+SPEC: Dict[str, Any] = {
+    "name": "HEALTH_ADCS_EST_ATTITUDE_ANGLE",
+    "expected_queue_id": 21,
+    "common_header": {
+        "skip_bytes": 26,
+        "fields": [
+            {"name": "Submodule_ID", "type": "UINT8"},
+            {"name": "Queue_ID", "type": "UINT8"},
+            {"name": "Number_of_Instances", "type": "UINT16_LE"},
+        ],
+    },
+    # Table 54: Estimated Attitude Angles Structure format (37 bytes)
+    "segment": [
+        {"name": "Operation_Status", "type": "UINT8"},
+        {"name": "Epoch_Time_UTC", "type": "UINT32_LE", "transform": "EPOCH32_TO_UTC_DATETIME"},
+        {"name": "Estimated_Quaternion_1", "type": "FLOAT64_LE"},
+        {"name": "Estimated_Quaternion_2", "type": "FLOAT64_LE"},
+        {"name": "Estimated_Quaternion_3", "type": "FLOAT64_LE"},
+        {"name": "Estimated_Quaternion_4", "type": "FLOAT64_LE"},
+    ],
+    "segment_len_bytes": 37,
+}
 
-    submodule_id = int(hex_str[52:54], 16) # Byte 26
-    queue_id = int(hex_str[54:56], 16)     # Byte 27
-    
-    # count_offset is for NUM_INSTANCE at bytes 28-29 (indices 56:60)
-    count_offset = 56
-    count = struct.unpack('<H', bytes.fromhex(hex_str[count_offset:count_offset + 4]))[0]
-    
-    if count == 0:
-        print("[WARN] Sensor count is zero. Skipping parsing.")
+
+# ---------------------------------------------------------------------
+# Generic decode helpers (same across your decoders)
+# ---------------------------------------------------------------------
+class ByteReader:
+    def __init__(self, data: bytes):
+        self.data = data
+        self.i = 0
+
+    def remaining(self) -> int:
+        return len(self.data) - self.i
+
+    def skip(self, n: int) -> None:
+        if self.i + n > len(self.data):
+            raise ValueError("Not enough bytes to skip")
+        self.i += n
+
+    def _unpack(self, fmt: str, size: int) -> Any:
+        if self.i + size > len(self.data):
+            raise ValueError("Not enough bytes to read")
+        chunk = self.data[self.i : self.i + size]
+        self.i += size
+        return struct.unpack(fmt, chunk)[0]
+
+    def u8(self) -> int:
+        return self._unpack("<B", 1)
+
+    def u16le(self) -> int:
+        return self._unpack("<H", 2)
+
+    def u32le(self) -> int:
+        return self._unpack("<I", 4)
+
+    def f64le(self) -> float:
+        return self._unpack("<d", 8)
+
+
+def _normalize_hex(hex_str: str) -> bytes:
+    s = hex_str.replace(" ", "").replace("\n", "").replace("\r", "").replace("\t", "")
+    if len(s) % 2 != 0:
+        raise ValueError(f"Hex string has odd length: {len(s)}")
+    return bytes.fromhex(s)
+
+
+def _read_typed(reader: ByteReader, typ: str) -> Any:
+    if typ == "UINT8":
+        return reader.u8()
+    if typ == "UINT16_LE":
+        return reader.u16le()
+    if typ == "UINT32_LE":
+        return reader.u32le()
+    if typ == "FLOAT64_LE":
+        return reader.f64le()
+    raise ValueError(f"Unsupported type: {typ}")
+
+
+def _apply_transform(val: Any, transform: Optional[str]) -> Any:
+    if not transform:
+        return val
+
+    if transform == "EPOCH32_TO_UTC_DATETIME":
+        return datetime.fromtimestamp(int(val), tz=timezone.utc)
+
+    raise ValueError(f"Unsupported transform: {transform}")
+
+
+def _parse_common_header(reader: ByteReader, spec: Dict[str, Any]) -> Dict[str, Any]:
+    header = spec["common_header"]
+    reader.skip(int(header["skip_bytes"]))
+    out: Dict[str, Any] = {}
+    for f in header["fields"]:
+        out[f["name"]] = _read_typed(reader, f["type"])
+    return out
+
+
+def _decode_from_spec(hex_str: str, spec: Dict[str, Any]) -> List[Dict[str, Any]]:
+    try:
+        data = _normalize_hex(hex_str)
+    except Exception as e:
+        print(f"[ERROR] Invalid hex input: {e}")
         return []
 
-    segment_len1 = 74 # 37 bytes per segment
-    data_payload = hex_str[60:] # Data starts at byte 30 (index 60)
-    offset=0
-    segments = []
-    for idx in range(count):
-        seg = data_payload[idx * segment_len1:(idx + 1) * segment_len1]
-        if len(seg) < segment_len1:
-           continue
-        
-        # Reset offset for each segment
-        offset = 0
-        
-        # Operation Status: 1 byte (2 hex chars)
-        operation_status = int(seg[offset:offset+2], 16)
-        offset += 2
-        
-        # Epoch Time: 4 bytes (8 hex chars) - UINT (assuming Little Endian per spec usually, or matching prior logic)
-        # Spec says 'UINT', previous code used '<I'.
-        epoch_bytes = bytes.fromhex(seg[offset:offset+8])
-        epoch_time = struct.unpack('<I', epoch_bytes)[0]
-        epoch_time_human = datetime.utcfromtimestamp(epoch_time).strftime('%Y-%m-%d %H:%M:%S')
-        offset += 8
-        
-        # Estimated Quaternion 1: 8 bytes (16 hex chars) - DOUBLE
-        est_attitude_angle_1 = struct.unpack('<d', bytes.fromhex(seg[offset:offset+16]))[0]
-        offset += 16
-        
-        # Estimated Quaternion 2: 8 bytes (16 hex chars) - DOUBLE
-        est_attitude_angle_2 = struct.unpack('<d', bytes.fromhex(seg[offset:offset+16]))[0]
-        offset += 16
-        
-        # Estimated Quaternion 3: 8 bytes (16 hex chars) - DOUBLE
-        est_attitude_angle_3 = struct.unpack('<d', bytes.fromhex(seg[offset:offset+16]))[0]
-        offset += 16
-        
-        # Estimated Quaternion 4: 8 bytes (16 hex chars) - DOUBLE
-        est_attitude_angle_4 = struct.unpack('<d', bytes.fromhex(seg[offset:offset+16]))[0]
-        offset += 16
+    r = ByteReader(data)
 
-        segments.append({
-            'Submodule_ID':           submodule_id,
-            'Queue_ID':               queue_id,
-            'Number of Instances':    count,
-            'Operation_Status':       operation_status,
-            'Epoch_Time_Human':       epoch_time_human,
-            'Est_quaternion_1':       est_attitude_angle_1,
-            'Est_quaternion_2':       est_attitude_angle_2,
-            'Est_quaternion_3':       est_attitude_angle_3,
-            'Est_quaternion_4':       est_attitude_angle_4
-        })
+    try:
+        hdr = _parse_common_header(r, spec)
+    except Exception as e:
+        print(f"[ERROR] Failed parsing header: {e}")
+        return []
+
+    expected_q = spec.get("expected_queue_id")
+    if expected_q is not None and hdr.get("Queue_ID") != expected_q:
+        print(f"[WARN] Queue_ID mismatch: got {hdr.get('Queue_ID')} expected {expected_q}")
+
+    count = int(hdr.get("Number_of_Instances", 0))
+    if count <= 0:
+        return []
+
+    seg_len = int(spec["segment_len_bytes"])
+    seg_fields = spec["segment"]
+
+    segments: List[Dict[str, Any]] = []
+
+    for idx in range(count):
+        if r.remaining() < seg_len:
+            break
+
+        row = dict(hdr)
+        start_i = r.i
+
+        try:
+            for f in seg_fields:
+                raw = _read_typed(r, f["type"])
+                raw = _apply_transform(raw, f.get("transform"))
+                row[f["name"]] = raw
+
+            consumed = r.i - start_i
+            if consumed != seg_len:
+                print(f"[WARN] Segment {idx}: consumed {consumed} bytes, expected {seg_len}")
+
+            segments.append(row)
+
+        except Exception as e:
+            print(f"[ERROR] Failed parsing segment {idx}: {e}")
+            # resync to next segment boundary
+            r.i = start_i + seg_len
+            continue
+
     return segments
 
-hex_string = "8cc57f00a5aaf0a2c260690d0000008100046d020101ffff2c010115080000dfc26069b7f9a2e4a5a0ca3f4e3805436733d0bf43953cccce6ae93f2057e39f2b5fe03f00eac26069136b637fe848ce3f2f9e5326bb5dd1bf7fda3140652ee93f2c382bbe7b09e03f00f4c26069f591e283a1f5d03f11d68fe50e7fd2bfa810927c5aeae83f41cf73ffe95adf3f0001c3606909fc07af6223d33ff9183f9ca6d0d3bf11c70647d38de83f040567bb056cde3f000bc360699809ec5557ead43fe420bbe7cddcd4bf9f81d5b43239e83f6a253da4c999dd3f0016c360697d6893810babd63f5ef9574fe0dfd5bffd58beb7b4dde73f058e55616bbadc3f0020c3606977b18cb42465d83f32bbe7f363d9d6bfed483c73eb7ae73fc6a0417af2cfdb3f002ac36069d14f731da30fda3f86c650a4b4c4d7bf3773e0862c13e73f8c14c5091edfda3f9056ee67abbae9736c7c2ccfe48cfdaca404a54ab9fb05504c4beb374535edb6a4ba"
 
-print(HEALTH_ADCS_EST_ATTITUDE_ANGLE(hex_string))
+# ---------------------------------------------------------------------
+# Pipeline entry-point function (KEEP THIS NAME)
+# ---------------------------------------------------------------------
+def HEALTH_ADCS_EST_ATTITUDE_ANGLE(hex_str: str) -> List[Dict[str, Any]]:
+    return _decode_from_spec(hex_str, SPEC)
