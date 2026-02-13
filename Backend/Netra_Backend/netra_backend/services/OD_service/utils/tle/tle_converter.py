@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from od_data_handler import fetch_latest_tle
 
 
-def tle_to_wgs84(line1: str, line2: str, time_points: int = 100, duration_hours: float = 24.0) -> List[Dict[str, Any]]:
+def tle_to_wgs84(line1: str, line2: str, time_points: int = 100, duration_hours: float = 24.0, past_hours: float = 0.0) -> List[Dict[str, Any]]:
     """
     Convert TLE to WGS84 coordinates over a time period, accounting for Earth's rotation.
     
@@ -23,7 +23,8 @@ def tle_to_wgs84(line1: str, line2: str, time_points: int = 100, duration_hours:
         line1: TLE line 1
         line2: TLE line 2
         time_points: Number of position points to generate
-        duration_hours: Duration in hours to propagate
+        duration_hours: Duration in hours to propagate into the future
+        past_hours: Duration in hours to propagate into the past
         
     Returns:
         List of dictionaries with timestamp, lat, lon, alt and velocity
@@ -35,13 +36,22 @@ def tle_to_wgs84(line1: str, line2: str, time_points: int = 100, duration_hours:
         # Create satellite object from TLE
         satellite = EarthSatellite(line1, line2, "Satellite", ts)
         
-        # Generate time points starting from current UTC time
-        start_time = datetime.now(timezone.utc)
+        # Generate time points starting from (now - past_hours)
+        current_time = datetime.now(timezone.utc)
+        start_time = current_time - timedelta(hours=past_hours)
+        total_duration = duration_hours + past_hours
+        
         positions = []
         
         for i in range(time_points):
             # Calculate time for this point
-            dt = start_time + timedelta(hours=(duration_hours * i / time_points))
+            # Avoid division by zero if time_points is 1
+            if time_points > 1:
+                progress = i / (time_points - 1)
+            else:
+                progress = 0
+            
+            dt = start_time + timedelta(hours=(total_duration * progress))
             t = ts.from_datetime(dt)
             
             # Propagate satellite position (TEME frame)
@@ -73,7 +83,7 @@ def tle_to_wgs84(line1: str, line2: str, time_points: int = 100, duration_hours:
         return []
 
 
-def get_satellite_track(tle_path: Optional[str] = None, time_points: int = 100, duration_hours: float = 24.0) -> Dict[str, Any]:
+def get_satellite_track(tle_path: Optional[str] = None, time_points: int = 100, duration_hours: float = 24.0, past_hours: float = 0.0) -> Dict[str, Any]:
     """
     Get satellite tracking data using TLE from the database.
     
@@ -81,6 +91,7 @@ def get_satellite_track(tle_path: Optional[str] = None, time_points: int = 100, 
         tle_path: IGNORED (kept for backward compatibility only)
         time_points: Number of position points
         duration_hours: Duration to propagate
+        past_hours: Duration to propagate into the past
         
     Returns:
         Dictionary with satellite tracking data
@@ -95,7 +106,7 @@ def get_satellite_track(tle_path: Optional[str] = None, time_points: int = 100, 
         }
     
     # Convert to WGS84
-    positions = tle_to_wgs84(tle_data["line1"], tle_data["line2"], time_points, duration_hours)
+    positions = tle_to_wgs84(tle_data["line1"], tle_data["line2"], time_points, duration_hours, past_hours)
     
     if not positions:
         return {

@@ -51,7 +51,7 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - PG_HOST=db
       - PG_PORT=5432
-      - PG_DB=centraDB
+      - PG_DB=grafanadb
       - PG_USER=root
       - PG_PASSWORD=root
       - GF_SMTP_ENABLED=true

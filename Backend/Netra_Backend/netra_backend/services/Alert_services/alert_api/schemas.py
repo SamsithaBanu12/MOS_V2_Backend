@@ -1,6 +1,13 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from enum import Enum
+
+class AlertStatus(str, Enum):
+    IDENTIFIED = "alert_identified"
+    ACKNOWLEDGED = "acknowledged"
+    RESOLVED = "resolved"
+    DISMISSED = "dismissed"
 
 class AlertBase(BaseModel):
     timestamp: Optional[str] = None
@@ -18,6 +25,9 @@ class AlertBase(BaseModel):
 
 class AlertCreate(AlertBase):
     pass
+
+class AlertUpdateStatus(BaseModel):
+    status: str # We'll validate this manually to give the specific error message the user requested
 
 class Alert(AlertBase):
     id: int
