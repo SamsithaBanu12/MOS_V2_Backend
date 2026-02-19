@@ -1,0 +1,200 @@
+logger=accesscontrol t=2026-02-18T09:08:07.258952059Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="all(action:folders.permissions:read scopes:folders:uid:ff9c8cxt3b75sd action:folders.permissions:write scopes:folders:uid:ff9c8cxt3b75sd)"
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.258957235Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.258960761Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=accesscontrol t=2026-02-18T09:08:07.258967439Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="action:folders:delete scopes:folders:uid:ff9c8cxt3b75sd"
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.25897196Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=grafana-apiserver t=2026-02-18T09:08:07.25905904Z level=debug msg=Request verb=GET url=https://127.0.0.1:3000/apis/folder.grafana.app/v1beta1/namespaces/default/folders/ff9c8cxt3b75sd headers="Accept: application/json\nAuthorization: Bearer <masked>\nUser-Agent: grafana/v0.0.0 (linux/amd64) kubernetes/$Format\n"
+logger=grafana-apiserver t=2026-02-18T09:08:07.259264442Z level=debug msg="grafana-apiserver: GET \"/apis/folder.grafana.app/v1beta1/namespaces/default/folders/ff9c8cxt3b75sd\" satisfied by gorestful with webservice /apis/folder.grafana.app/v1beta1"
+logger=accesscontrol t=2026-02-18T09:08:07.259666785Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="action:folders:read scopes:folders:uid:ff9c8cxt3b75sd"
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.259687872Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=grafana-apiserver t=2026-02-18T09:08:07.259792674Z level=debug msg=HTTP verb=GET URI= latency=650.259µs userAgent="grafana/v0.0.0 (linux/amd64) kubernetes/$Format" audit-ID=25712a37-7c7f-4265-ac8c-43ad6dff2dfc srcIP= resp=200
+logger=grafana-apiserver t=2026-02-18T09:08:07.259824263Z level=debug msg=Response status="200 OK" milliseconds=0
+logger=login.authinfo t=2026-02-18T09:08:07.278537652Z level=debug msg="auth info set in cache" cacheKey=authinfo-0-authproxy-admin
+logger=scim.util t=2026-02-18T09:08:07.278849822Z level=debug msg="K8s client not configured, using static SCIM config for non-provisioned users"
+logger=user.sync t=2026-02-18T09:08:07.278858963Z level=debug msg="Updating auth connection for user" id=
+logger=login.authinfo.store t=2026-02-18T09:08:07.27924918Z level=debug msg="Updated user_auth" user_id=1 auth_id=admin auth_module=authproxy rows=1
+logger=org.sync id=1 login=admin t=2026-02-18T09:08:07.285225835Z level=debug msg="Syncing organization roles" extOrgRoles=map[1:Admin]
+logger=id-service t=2026-02-18T09:08:07.28659433Z level=debug msg="Cached token found" id=user:1
+logger=auth.client.proxy t=2026-02-18T09:08:07.289241142Z level=debug msg="Cache proxy user" userId=1
+logger=accesscontrol t=2026-02-18T09:08:07.291457108Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="action:folders:read scopes:folders:uid:ff9c8cxt3b75sd"
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.291467453Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=grafana-apiserver t=2026-02-18T09:08:07.291551335Z level=debug msg=Request verb=GET url=https://127.0.0.1:3000/apis/folder.grafana.app/v1beta1/namespaces/default/folders/ff9c8cxt3b75sd headers="Accept: application/json\nAuthorization: Bearer <masked>\nUser-Agent: grafana/v0.0.0 (linux/amd64) kubernetes/$Format\n"
+logger=grafana-apiserver t=2026-02-18T09:08:07.291719406Z level=debug msg="grafana-apiserver: GET \"/apis/folder.grafana.app/v1beta1/namespaces/default/folders/ff9c8cxt3b75sd\" satisfied by gorestful with webservice /apis/folder.grafana.app/v1beta1"
+logger=accesscontrol t=2026-02-18T09:08:07.292017195Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="action:folders:read scopes:folders:uid:ff9c8cxt3b75sd"
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.292026117Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=grafana-apiserver t=2026-02-18T09:08:07.29212911Z level=debug msg=HTTP verb=GET URI= latency=497.852µs userAgent="grafana/v0.0.0 (linux/amd64) kubernetes/$Format" audit-ID=755f8850-1457-4e9a-ba25-af206e22c3cb srcIP= resp=200
+logger=grafana-apiserver t=2026-02-18T09:08:07.292145202Z level=debug msg=Response status="200 OK" milliseconds=0
+logger=accesscontrol t=2026-02-18T09:08:07.292373142Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="action:folders:read scopes:folders:uid:ff9c8cxt3b75sd"
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.29238031Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=accesscontrol t=2026-02-18T09:08:07.292386309Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="action:folders:write scopes:folders:uid:ff9c8cxt3b75sd"
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.292389189Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=accesscontrol t=2026-02-18T09:08:07.292393636Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="all(action:folders.permissions:read scopes:folders:uid:ff9c8cxt3b75sd action:folders.permissions:write scopes:folders:uid:ff9c8cxt3b75sd)"
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.292397108Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.292398975Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=accesscontrol t=2026-02-18T09:08:07.292401674Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="action:folders:delete scopes:folders:uid:ff9c8cxt3b75sd"
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.292404005Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=grafana-apiserver t=2026-02-18T09:08:07.292460559Z level=debug msg=Request verb=GET url=https://127.0.0.1:3000/apis/folder.grafana.app/v1beta1/namespaces/default/folders/ff9c8cxt3b75sd headers="Accept: application/json\nAuthorization: Bearer <masked>\nUser-Agent: grafana/v0.0.0 (linux/amd64) kubernetes/$Format\n"
+logger=grafana-apiserver t=2026-02-18T09:08:07.292573978Z level=debug msg="grafana-apiserver: GET \"/apis/folder.grafana.app/v1beta1/namespaces/default/folders/ff9c8cxt3b75sd\" satisfied by gorestful with webservice /apis/folder.grafana.app/v1beta1"
+logger=accesscontrol t=2026-02-18T09:08:07.292835928Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="action:folders:read scopes:folders:uid:ff9c8cxt3b75sd"
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.292842015Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=grafana-apiserver t=2026-02-18T09:08:07.292917253Z level=debug msg=HTTP verb=GET URI= latency=411.98µs userAgent="grafana/v0.0.0 (linux/amd64) kubernetes/$Format" audit-ID=4cae36e6-44f3-4b91-b84e-af6246c077cd srcIP= resp=200
+logger=grafana-apiserver t=2026-02-18T09:08:07.292929651Z level=debug msg=Response status="200 OK" milliseconds=0
+logger=live t=2026-02-18T09:08:07.312806089Z level=debug msg="Client wants to subscribe" user=1 client=196f43db-67c7-4ac9-aa47-91fb4334adbb channel=1/grafana/dashboard/uid/grqhh4
+logger=live t=2026-02-18T09:08:07.312960001Z level=debug msg="Found cached channel handler" channel=grafana/dashboard/uid/grqhh4
+logger=grafana-apiserver t=2026-02-18T09:08:07.313120407Z level=debug msg=Request verb=GET url=https://127.0.0.1:3000/apis/dashboard.grafana.app/v0alpha1/namespaces/default/dashboards/grqhh4 headers="Accept: application/json\nAuthorization: Bearer <masked>\nUser-Agent: grafana/v0.0.0 (linux/amd64) kubernetes/$Format\n"
+logger=grafana-apiserver t=2026-02-18T09:08:07.313403463Z level=debug msg="grafana-apiserver: GET \"/apis/dashboard.grafana.app/v0alpha1/namespaces/default/dashboards/grqhh4\" satisfied by gorestful with webservice /apis/dashboard.grafana.app/v0alpha1"
+logger=authz-grpc-server subject=user:ef9c8cwxblou8f namespace=default group=dashboard.grafana.app resource=dashboards verb=get t=2026-02-18T09:08:07.316352269Z level=debug msg="Check execution time" duration=0
+logger=grafana-apiserver t=2026-02-18T09:08:07.318635251Z level=debug msg=Response status="200 OK" milliseconds=5
+logger=grafana-apiserver t=2026-02-18T09:08:07.318895774Z level=debug msg=HTTP verb=GET URI= latency=5.652542ms userAgent="grafana/v0.0.0 (linux/amd64) kubernetes/$Format" audit-ID=e8bfd09a-4d2f-4671-9d1c-3c39a8fc454a srcIP= resp=200
+logger=accesscontrol t=2026-02-18T09:08:07.320735194Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="action:dashboards:read scopes:dashboards:uid:grqhh4"
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.320759729Z level=debug msg="Matched scope" userscope=dashboards:* targetscope=dashboards:uid:grqhh4
+logger=live t=2026-02-18T09:08:07.320769217Z level=debug msg="Client subscribed" user=1 client=196f43db-67c7-4ac9-aa47-91fb4334adbb channel=1/grafana/dashboard/uid/grqhh4
+logger=live t=2026-02-18T09:08:07.327882431Z level=debug msg="Client disconnected" user=1 client=beb8bd12-79f2-401d-b7fa-39829aac7222 reason="connection closed" elapsed=19.883179395s
+logger=login.authinfo t=2026-02-18T09:08:07.340067724Z level=debug msg="auth info set in cache" cacheKey=authinfo-0-authproxy-admin
+logger=scim.util t=2026-02-18T09:08:07.340379065Z level=debug msg="K8s client not configured, using static SCIM config for non-provisioned users"
+logger=user.sync t=2026-02-18T09:08:07.340387957Z level=debug msg="Updating auth connection for user" id=
+logger=login.authinfo.store t=2026-02-18T09:08:07.340768729Z level=debug msg="Updated user_auth" user_id=1 auth_id=admin auth_module=authproxy rows=1
+logger=org.sync id=1 login=admin t=2026-02-18T09:08:07.345594612Z level=debug msg="Syncing organization roles" extOrgRoles=map[1:Admin]
+logger=login.authinfo t=2026-02-18T09:08:07.348886977Z level=debug msg="auth info set in cache" cacheKey=authinfo-0-authproxy-admin
+logger=scim.util t=2026-02-18T09:08:07.349354812Z level=debug msg="K8s client not configured, using static SCIM config for non-provisioned users"
+logger=user.sync t=2026-02-18T09:08:07.349370349Z level=debug msg="Updating auth connection for user" id=
+logger=login.authinfo.store t=2026-02-18T09:08:07.349969433Z level=debug msg="Updated user_auth" user_id=1 auth_id=admin auth_module=authproxy rows=1
+logger=org.sync id=1 login=admin t=2026-02-18T09:08:07.354640399Z level=debug msg="Syncing organization roles" extOrgRoles=map[1:Admin]
+logger=id-service t=2026-02-18T09:08:07.35615506Z level=debug msg="Cached token found" id=user:1
+logger=auth.client.proxy t=2026-02-18T09:08:07.360111483Z level=debug msg="Cache proxy user" userId=1
+logger=accesscontrol t=2026-02-18T09:08:07.36341668Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="action:alert.rules:read scopes:"
+logger=grafana-apiserver t=2026-02-18T09:08:07.363594224Z level=debug msg=Request verb=GET url="https://127.0.0.1:3000/apis/folder.grafana.app/v1beta1/namespaces/default/folders?labelSelector=grafana.app%2Ffullpath%3Dtrue&limit=100000" headers="Accept: application/json\nAuthorization: Bearer <masked>\nUser-Agent: grafana/v0.0.0 (linux/amd64) kubernetes/$Format\n"
+logger=grafana-apiserver t=2026-02-18T09:08:07.363936823Z level=debug msg="grafana-apiserver: GET \"/apis/folder.grafana.app/v1beta1/namespaces/default/folders\" satisfied by gorestful with webservice /apis/folder.grafana.app/v1beta1"
+logger=grafana-apiserver t=2026-02-18T09:08:07.365762794Z level=debug msg=Response status="200 OK" milliseconds=2
+logger=grafana-apiserver t=2026-02-18T09:08:07.365785778Z level=debug msg=HTTP verb=LIST URI= latency=2.044771ms userAgent="grafana/v0.0.0 (linux/amd64) kubernetes/$Format" audit-ID=09d5ce35-29eb-44a1-9c21-25d16dce4da6 srcIP= resp=200
+logger=accesscontrol t=2026-02-18T09:08:07.365972939Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="all(all(action:alert.rules:read scopes:folders:uid:ff9c8cxt3b75sd action:folders:read scopes:folders:uid:ff9c8cxt3b75sd))"
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.365987563Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=accesscontrol.evaluator t=2026-02-18T09:08:07.365993735Z level=debug msg="Matched scope" userscope=folders:* targetscope=folders:uid:ff9c8cxt3b75sd
+logger=id-service t=2026-02-18T09:08:07.369169761Z level=debug msg="Cached token found" id=user:1
+logger=auth.client.proxy t=2026-02-18T09:08:07.372098967Z level=debug msg="Cache proxy user" userId=1
+logger=accesscontrol t=2026-02-18T09:08:07.374766365Z level=debug msg="Evaluating permissions" id=user:1 orgID=1 permissions="action:annotations:read scopes:"
+logger=ngalert.scheduler t=2026-02-18T09:08:10.001589148Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=login.authinfo t=2026-02-18T09:08:17.113274441Z level=debug msg="auth info set in cache" cacheKey=authinfo-0-authproxy-admin
+logger=scim.util t=2026-02-18T09:08:17.113579162Z level=debug msg="K8s client not configured, using static SCIM config for non-provisioned users"
+logger=user.sync t=2026-02-18T09:08:17.113587704Z level=debug msg="Updating auth connection for user" id=
+logger=login.authinfo.store t=2026-02-18T09:08:17.113981977Z level=debug msg="Updated user_auth" user_id=1 auth_id=admin auth_module=authproxy rows=1
+logger=org.sync id=1 login=admin t=2026-02-18T09:08:17.120075157Z level=debug msg="Syncing organization roles" extOrgRoles=map[1:Admin]
+logger=id-service t=2026-02-18T09:08:17.124039286Z level=debug msg="Cached token found" id=user:1
+logger=auth.client.proxy t=2026-02-18T09:08:17.126801681Z level=debug msg="Cache proxy user" userId=1
+logger=context userId=1 orgId=1 uname=admin t=2026-02-18T09:08:17.131138205Z level=debug msg="Received unknown frontend metric" metric=frontend_app_init_ms
+logger=context userId=1 orgId=1 uname=admin t=2026-02-18T09:08:17.131149447Z level=debug msg="Received unknown frontend metric" metric=loadDashboardScene_ms
+logger=ssosettings.service t=2026-02-18T09:08:18.477064839Z level=debug msg="reloading SSO Settings for all providers"
+logger=infra.lockservice t=2026-02-18T09:08:18.477077826Z level=debug msg="Start LockAndExecute" actionName=dashboard-cleanup
+logger=secrets t=2026-02-18T09:08:18.477205409Z level=debug msg="Removing expired data keys from cache..."
+logger=secrets t=2026-02-18T09:08:18.477222472Z level=debug msg="Removing expired data keys from cache finished successfully"
+logger=ssosettings.service t=2026-02-18T09:08:18.477487032Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:08:18.477502279Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:08:18.477508855Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:08:18.477523776Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:08:18.477529102Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:08:18.477537256Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:08:18.477542975Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:08:18.477563611Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=infra.lockservice t=2026-02-18T09:08:18.493585598Z level=debug msg="Start execution" actionName=dashboard-cleanup
+logger=infra.lockservice t=2026-02-18T09:08:18.493605363Z level=debug msg="Execution finished" actionName=dashboard-cleanup duration=22.269µs
+logger=infra.lockservice t=2026-02-18T09:08:18.493613732Z level=debug msg="LockAndExecute finished" actionName=dashboard-cleanup acquiredLock=true duration=16.547368ms
+logger=ngalert.sender.router t=2026-02-18T09:08:18.514054892Z level=debug msg="Attempting to sync admin configs" count=0
+logger=ngalert.sender.router t=2026-02-18T09:08:18.514072734Z level=debug msg="Finish of admin configuration sync"
+logger=ngalert.multiorg.alertmanager t=2026-02-18T09:08:18.522822819Z level=debug msg="Synchronizing Alertmanagers for orgs"
+logger=ngalert.notifier component=alertmanager orgID=1 t=2026-02-18T09:08:18.523913367Z level=debug msg="Config hasn't changed, skipping configuration sync."
+logger=ngalert.multiorg.alertmanager t=2026-02-18T09:08:18.524775934Z level=debug msg="Done synchronizing Alertmanagers for orgs"
+logger=ngalert.scheduler t=2026-02-18T09:08:20.00144172Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.scheduler t=2026-02-18T09:08:30.001703629Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.scheduler t=2026-02-18T09:08:40.001412408Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=infra.lockservice t=2026-02-18T09:08:48.476399119Z level=debug msg="Start LockAndExecute" actionName=dashboard-cleanup
+logger=infra.lockservice t=2026-02-18T09:08:48.484182568Z level=debug msg="Start execution" actionName=dashboard-cleanup
+logger=infra.lockservice t=2026-02-18T09:08:48.484202075Z level=debug msg="Execution finished" actionName=dashboard-cleanup duration=21.538µs
+logger=infra.lockservice t=2026-02-18T09:08:48.48421008Z level=debug msg="LockAndExecute finished" actionName=dashboard-cleanup acquiredLock=true duration=7.827407ms
+logger=ngalert.scheduler t=2026-02-18T09:08:50.000806054Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.scheduler t=2026-02-18T09:09:00.001464853Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.scheduler t=2026-02-18T09:09:10.001268033Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=infra.lockservice t=2026-02-18T09:09:18.476383819Z level=debug msg="Start LockAndExecute" actionName=dashboard-cleanup
+logger=secrets t=2026-02-18T09:09:18.476408343Z level=debug msg="Removing expired data keys from cache..."
+logger=secrets t=2026-02-18T09:09:18.476421245Z level=debug msg="Removing expired data keys from cache finished successfully"
+logger=ssosettings.service t=2026-02-18T09:09:18.476387164Z level=debug msg="reloading SSO Settings for all providers"
+logger=ssosettings.service t=2026-02-18T09:09:18.476777505Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:09:18.476801914Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:09:18.476809204Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:09:18.476840057Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:09:18.476935092Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:09:18.47694945Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:09:18.476960849Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:09:18.476982603Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=infra.lockservice t=2026-02-18T09:09:18.488545902Z level=debug msg="Start execution" actionName=dashboard-cleanup
+logger=infra.lockservice t=2026-02-18T09:09:18.488589325Z level=debug msg="Execution finished" actionName=dashboard-cleanup duration=36.747µs
+logger=infra.lockservice t=2026-02-18T09:09:18.488604626Z level=debug msg="LockAndExecute finished" actionName=dashboard-cleanup acquiredLock=true duration=12.231703ms
+logger=ngalert.sender.router t=2026-02-18T09:09:18.515208593Z level=debug msg="Attempting to sync admin configs" count=0
+logger=ngalert.sender.router t=2026-02-18T09:09:18.515235236Z level=debug msg="Finish of admin configuration sync"
+logger=ngalert.multiorg.alertmanager t=2026-02-18T09:09:18.525029052Z level=debug msg="Synchronizing Alertmanagers for orgs"
+logger=ngalert.notifier component=alertmanager orgID=1 t=2026-02-18T09:09:18.525794454Z level=debug msg="Config hasn't changed, skipping configuration sync."
+logger=ngalert.multiorg.alertmanager t=2026-02-18T09:09:18.526321373Z level=debug msg="Done synchronizing Alertmanagers for orgs"
+logger=ngalert.scheduler t=2026-02-18T09:09:20.001004828Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.scheduler t=2026-02-18T09:09:30.001680562Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.scheduler t=2026-02-18T09:09:40.001136441Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=infra.lockservice t=2026-02-18T09:09:48.476771132Z level=debug msg="Start LockAndExecute" actionName=dashboard-cleanup
+logger=infra.lockservice t=2026-02-18T09:09:48.485769798Z level=debug msg="Start execution" actionName=dashboard-cleanup
+logger=infra.lockservice t=2026-02-18T09:09:48.485787424Z level=debug msg="Execution finished" actionName=dashboard-cleanup duration=20.557µs
+logger=infra.lockservice t=2026-02-18T09:09:48.485798405Z level=debug msg="LockAndExecute finished" actionName=dashboard-cleanup acquiredLock=true duration=9.048242ms
+logger=ngalert.scheduler t=2026-02-18T09:09:50.001459199Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.scheduler t=2026-02-18T09:10:00.001014588Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.scheduler t=2026-02-18T09:10:10.001950566Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.notifier t=2026-02-18T09:10:18.029343279Z level=debug msg="Running maintenance"
+logger=infra.kvstore.sql t=2026-02-18T09:10:18.029841149Z level=debug msg="kvstore value not changed" orgId=1 namespace=alertmanager key=notifications value=
+logger=infra.kvstore.sql t=2026-02-18T09:10:18.029841168Z level=debug msg="kvstore value not changed" orgId=1 namespace=alertmanager key=silences value=
+logger=ngalert.notifier t=2026-02-18T09:10:18.029907748Z level=debug msg="Maintenance done" duration=571.501µs size=0
+logger=infra.lockservice t=2026-02-18T09:10:18.476873526Z level=debug msg="Start LockAndExecute" actionName=dashboard-cleanup
+logger=ssosettings.service t=2026-02-18T09:10:18.47690213Z level=debug msg="reloading SSO Settings for all providers"
+logger=secrets t=2026-02-18T09:10:18.47688188Z level=debug msg="Removing expired data keys from cache..."
+logger=secrets t=2026-02-18T09:10:18.476931351Z level=debug msg="Removing expired data keys from cache finished successfully"
+logger=infra.lockservice t=2026-02-18T09:10:18.493178646Z level=debug msg="Start execution" actionName=dashboard-cleanup
+logger=infra.lockservice t=2026-02-18T09:10:18.493197484Z level=debug msg="Execution finished" actionName=dashboard-cleanup duration=22.478µs
+logger=infra.lockservice t=2026-02-18T09:10:18.493205749Z level=debug msg="LockAndExecute finished" actionName=dashboard-cleanup acquiredLock=true duration=16.342326ms
+logger=ssosettings.service t=2026-02-18T09:10:18.501821306Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:10:18.501838899Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:10:18.501845021Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:10:18.501850733Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:10:18.501855749Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:10:18.501861557Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:10:18.501865845Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:10:18.501886991Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ngalert.sender.router t=2026-02-18T09:10:18.516527918Z level=debug msg="Attempting to sync admin configs" count=0
+logger=ngalert.sender.router t=2026-02-18T09:10:18.516548433Z level=debug msg="Finish of admin configuration sync"
+logger=ngalert.multiorg.alertmanager t=2026-02-18T09:10:18.527348788Z level=debug msg="Synchronizing Alertmanagers for orgs"
+logger=ngalert.notifier component=alertmanager orgID=1 t=2026-02-18T09:10:18.528487954Z level=debug msg="Config hasn't changed, skipping configuration sync."
+logger=ngalert.multiorg.alertmanager t=2026-02-18T09:10:18.529215332Z level=debug msg="Done synchronizing Alertmanagers for orgs"
+logger=ngalert.scheduler t=2026-02-18T09:10:20.000932861Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.scheduler t=2026-02-18T09:10:30.001359461Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.scheduler t=2026-02-18T09:10:40.000954649Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=infra.lockservice t=2026-02-18T09:10:48.476502176Z level=debug msg="Start LockAndExecute" actionName=dashboard-cleanup
+logger=infra.lockservice t=2026-02-18T09:10:48.484880312Z level=debug msg="Start execution" actionName=dashboard-cleanup
+logger=infra.lockservice t=2026-02-18T09:10:48.484907542Z level=debug msg="Execution finished" actionName=dashboard-cleanup duration=31.492µs
+logger=infra.lockservice t=2026-02-18T09:10:48.484919103Z level=debug msg="LockAndExecute finished" actionName=dashboard-cleanup acquiredLock=true duration=8.435417ms
+logger=ngalert.scheduler t=2026-02-18T09:10:50.000955176Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.scheduler t=2026-02-18T09:11:00.001453717Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ngalert.scheduler t=2026-02-18T09:11:10.001149058Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0
+logger=ssosettings.service t=2026-02-18T09:11:18.476328811Z level=debug msg="reloading SSO Settings for all providers"
+logger=infra.lockservice t=2026-02-18T09:11:18.476356568Z level=debug msg="Start LockAndExecute" actionName=dashboard-cleanup
+logger=secrets t=2026-02-18T09:11:18.476404797Z level=debug msg="Removing expired data keys from cache..."
+logger=secrets t=2026-02-18T09:11:18.476427244Z level=debug msg="Removing expired data keys from cache finished successfully"
+logger=ssosettings.service t=2026-02-18T09:11:18.476731537Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:11:18.476747591Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:11:18.476755175Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:11:18.476762865Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:11:18.476769654Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:11:18.476776884Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:11:18.476782995Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=ssosettings.service t=2026-02-18T09:11:18.476805833Z level=debug msg="No SSO Settings found in the database, using system settings"
+logger=infra.lockservice t=2026-02-18T09:11:18.492359616Z level=debug msg="Start execution" actionName=dashboard-cleanup
+logger=infra.lockservice t=2026-02-18T09:11:18.492377747Z level=debug msg="Execution finished" actionName=dashboard-cleanup duration=25.801µs
+logger=infra.lockservice t=2026-02-18T09:11:18.492386479Z level=debug msg="LockAndExecute finished" actionName=dashboard-cleanup acquiredLock=true duration=16.042691ms
+logger=ngalert.sender.router t=2026-02-18T09:11:18.517110952Z level=debug msg="Attempting to sync admin configs" count=0
+logger=ngalert.sender.router t=2026-02-18T09:11:18.517133128Z level=debug msg="Finish of admin configuration sync"
+logger=ngalert.multiorg.alertmanager t=2026-02-18T09:11:18.529906303Z level=debug msg="Synchronizing Alertmanagers for orgs"
+logger=ngalert.notifier component=alertmanager orgID=1 t=2026-02-18T09:11:18.531012285Z level=debug msg="Config hasn't changed, skipping configuration sync."
+logger=ngalert.multiorg.alertmanager t=2026-02-18T09:11:18.531596858Z level=debug msg="Done synchronizing Alertmanagers for orgs"
+logger=ngalert.scheduler t=2026-02-18T09:11:20.001430236Z level=debug msg="Alert rules fetched" rulesCount=0 foldersCount=0 updatedRules=0

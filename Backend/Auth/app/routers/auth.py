@@ -153,6 +153,7 @@ async def login(
     # Create Access Token
     token_data = {
         "user_id": str(user.id),
+        "username": user.username,
         "role": role_name,
         "permissions": permissions,
         "type": "access"
@@ -235,6 +236,7 @@ async def refresh_token(
     
     new_access_token = create_access_token({
         "user_id": str(user.id),
+        "username": user.username,
         "role": role_name,
         "permissions": permissions,
         "type": "access"

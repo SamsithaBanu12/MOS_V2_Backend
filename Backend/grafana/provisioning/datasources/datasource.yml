@@ -4,13 +4,16 @@ datasources:
   - name: Postgres
     type: postgres
     access: proxy
-    url: db:5432        # db = service name from Docker Compose
-    database: centraDB  # default database
+    url: db:5432
     user: root
+    isDefault: true
+    editable: false
+
     secureJsonData:
       password: root
-    isDefault: true
-    editable: true
+
     jsonData:
-      sslmode: "disable"
-      version: "16"
+      database: centraDB   
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false

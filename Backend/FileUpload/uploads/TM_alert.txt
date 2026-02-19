@@ -1,0 +1,97 @@
+Unified TM_alert.JSON file :--
+
+{
+  "alert_type": "",
+
+  "standard_header_fields": {
+    "Submodule_ID": null,
+    "Queue_ID": null,
+    "Number_of_Instances": null,
+    "Operation_Status": null,
+    "Epoch_Time_Human": ""
+  },
+
+  "payload_fields": {},
+
+  "alert_metadata": {
+    "alert_id": "",
+    "source_file": "TM_ALERT.json",
+    "subsystem": "ADCS",
+    "created_at_utc": "",
+    "generated_by": "",
+    "version": ""
+  },
+
+  "severity": {
+    "overall": "",
+    "priority": "",
+    "status": "",
+    "overall_selection_rule": "overall_severity = highest(metric severities) using order RED > AMBER > YELLOW > GREEN",
+    "triggered_metrics": [],
+    "logic": {
+      "evaluation_order": ["RED", "AMBER", "YELLOW", "GREEN"],
+      "selection_rule": "Assign the highest severity that matches first (RED > AMBER > YELLOW > GREEN).",
+
+      "RED": {
+        "condition": "value == min_value OR value == max_value",
+        "description": "Critical boundary breach (exact min/max)."
+      },
+
+      "AMBER": {
+        "amber_percent": 90,
+        "condition": "value >= (amber_percent/100)*max_value OR value <= (amber_percent/100)*min_value",
+        "description": "Very close to min/max boundary (>=90% towards limit)."
+      },
+
+      "YELLOW": {
+        "yellow_percent": 80,
+        "condition": "value >= (yellow_percent/100)*max_value OR value <= (yellow_percent/100)*min_value",
+        "description": "Close to min/max boundary (>=80% towards limit)."
+      },
+
+      "GREEN": {
+        "condition": "value is inside safe range and not matching RED/AMBER/YELLOW conditions",
+        "description": "Normal operating zone."
+      }
+    }
+  },
+
+  "threshold_validation_checks": [
+    {
+      "metric_name": "",
+      "metric_type": "",
+      "value": null,
+      "min_value": null,
+      "max_value": null,
+      "severity": "",
+      "status": "",
+      "reason": "",
+      "thresholds": {
+        "yellow_percent": 80,
+        "amber_percent": 90,
+        "red_percent": 100
+      }
+    }
+  ],
+
+  "metric_classification_type": {
+    "metric_type": "",
+    "unit": "",
+    "description": ""
+  },
+
+  "incident_tagging": {
+    "incident_id": "",
+    "tags": []
+  },
+
+  "number_of_instances": {
+    "count": null,
+    "instances": [
+      {
+        "instance_id": null,
+        "payload": {}
+      }
+    ]
+  }
+}

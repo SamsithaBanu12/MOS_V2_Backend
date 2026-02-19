@@ -23,6 +23,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
     
     def extract_token(self, request: Request) -> str | None:
         auth_header = request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
-            return None
-        return auth_header.split(" ", 1)[1]
+        if auth_header and auth_header.startswith("Bearer "):
+            return auth_header.split(" ", 1)[1]
+        
+        return request.cookies.get("access_token")

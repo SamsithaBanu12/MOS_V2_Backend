@@ -6,7 +6,8 @@ SERVICE_ROUTES = {
     "/api/schedules": "http://schedule-upload:8008/api/schedules",
     "/api/runs": "http://schedule-upload:8008/api/runs",
     "/api/bridge": "http://bridge-backend:8002",
-    "/api/openc3-api/api": "http://openc3-cosmos-cmd-tlm-api:2901/openc3-api/api"
+    "/api/openc3-api/api": "http://openc3-cosmos-cmd-tlm-api:2901/openc3-api/api",
+    "/api/grafana": "http://grafana:3000"
 }
 
 def resolve_service(path:str) -> tuple[str, str]:
